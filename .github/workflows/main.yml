@@ -39,7 +39,7 @@ jobs:
 
           # Android (on Ubuntu)
           - platform: ubuntu-22.04
-            args: --target aarch64-linux-android --bundles android
+            args: --target aarch64-linux-android
             is_android: true
 
     runs-on: ${{ matrix.platform }}
@@ -128,5 +128,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: app/src-tauri/target/*/android-build/*.apk
+          path: |
+            app/src-tauri/target/aarch64-linux-android/release/bundle/apk/*.apk
+            app/src-tauri/target/*/release/bundle/apk/*.apk
           retention-days: 7
