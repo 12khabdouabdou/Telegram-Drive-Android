@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Link, Copy, Check, Trash2, RefreshCw, AlertCircle, Lock, Clock } from 'lucide-react';
+import { X, Link, Copy, Check, Trash2, RefreshCw, Lock, Clock } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
-import { ShareInfo } from '../../../types';
+import { ShareInfo } from '../../types';
 
 interface MobileShareDashboardProps {
   onClose: () => void;

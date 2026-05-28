@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { load } from '@tauri-apps/plugin-store';
-import { TelegramFile, TelegramFolder } from '../types';
+import { TelegramFolder } from '../types';
 import { toast } from 'sonner';
 
 export function useTelegramConnection(onLogout: () => void) {

@@ -3,22 +3,21 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { toast } from 'sonner';
-import { Folder, Download, Settings, Search, Plus, Grid, List, Upload, FolderPlus, RefreshCw } from 'lucide-react';
+import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
 import { TouchFileList } from './TouchFileList';
 import { ThemeToggle } from '../shared/ThemeToggle';
 import { usePlatform } from '../../hooks/usePlatform';
 import { TelegramFile, TelegramFolder, DownloadItem, QueueItem } from '../../types';
 import { formatBytes } from '../../utils';
-import { useSettings } from '../../context/SettingsContext';
 
 // Lazy load modals
-const CreateFolderModal = lazy(() => import('./CreateFolderModal'));
-const MoveToFolderModal = lazy(() => import('./MoveToFolderModal'));
-const MobileShareDialog = lazy(() => import('./MobileShareDialog'));
-const MobileImageGallery = lazy(() => import('./MobileImageGallery'));
-const MobileNetworkSettings = lazy(() => import('./MobileNetworkSettings'));
-const MobileShareDashboard = lazy(() => import('./MobileShareDashboard'));
+const CreateFolderModal = lazy(() => import('./CreateFolderModal').then(m => ({ default: m.CreateFolderModal })));
+const MoveToFolderModal = lazy(() => import('./MoveToFolderModal').then(m => ({ default: m.MoveToFolderModal })));
+const MobileShareDialog = lazy(() => import('./MobileShareDialog').then(m => ({ default: m.MobileShareDialog })));
+const MobileImageGallery = lazy(() => import('./MobileImageGallery').then(m => ({ default: m.MobileImageGallery })));
+const MobileNetworkSettings = lazy(() => import('./MobileNetworkSettings').then(m => ({ default: m.MobileNetworkSettings })));
+const MobileShareDashboard = lazy(() => import('./MobileShareDashboard').then(m => ({ default: m.MobileShareDashboard })));
 
 export default function MobileDashboard({ onLogout }: { onLogout?: () => void }) {
   const queryClient = useQueryClient();
@@ -43,7 +42,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const [showShareDashboard, setShowShareDashboard] = useState(false);
   
   const { isAndroid } = usePlatform();
-  const { settings } = useSettings();
   const storeRef = { current: null } as any;
 
   // Initialize connection
@@ -89,11 +87,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     },
     enabled: isConnected,
   });
-
-  // Filter to only image files for gallery
-  const imageFiles = allFiles.filter((f: TelegramFile) => 
-    /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(f.name)
-  );
 
   const displayedFiles = searchTerm.length > 2
     ? allFiles.filter((f: TelegramFile) => 
@@ -210,7 +203,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
         setUploadQueue(prev => [...prev, newItem]);
         
         // Call initiate_upload
-        const result = await invoke<{ upload_id: string; file_path: string }>('initiate_upload', {
+        await invoke<{ upload_id: string; file_path: string }>('initiate_upload', {
           folderId: activeFolderId,
           filePath: selected[0],
           fileName: selected[0].split('/').pop() || 'file'

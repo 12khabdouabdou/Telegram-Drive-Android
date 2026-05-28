@@ -4,10 +4,8 @@ import { toast } from 'sonner';
 import { TelegramFile } from '../types';
 
 export function useFileOperations(
-  activeFolderId: number | null,
   selectedIds: number[],
   setSelectedIds: (ids: number[]) => void,
-  files: TelegramFile[]
 ) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);

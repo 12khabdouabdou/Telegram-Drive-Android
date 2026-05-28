@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Search } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
-import { TelegramFile } from '../../../types';
+import { TelegramFile } from '../../types';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -88,10 +88,12 @@ export function MobilePdfViewer({ file, onClose, onNext, onPrev, activeFolderId 
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        await page.render({
+        const renderContext = {
           canvasContext: context,
           viewport,
-        }).promise;
+          canvas
+        };
+        await page.render(renderContext).promise;
       } catch (err) {
         console.error('Error rendering page:', err);
       }

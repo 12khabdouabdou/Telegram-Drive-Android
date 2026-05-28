@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   Download, Trash2, FolderInput, Share2, Edit3, Copy, 
-  ExternalLink, MoreVertical, X, FileText, Image, Music, Film, File 
+  ExternalLink, X, FileText, Image, Music, Film, File 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TelegramFile } from '../../types';
@@ -149,7 +149,7 @@ export function ContextMenu({
 
             {/* Menu Items */}
             <div className="p-4 grid grid-cols-3 gap-3">
-              {menuItems.map((item, index) => (
+              {menuItems.map((item) => (
                 <button
                   key={item.label}
                   onClick={() => {

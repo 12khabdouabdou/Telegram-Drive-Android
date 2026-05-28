@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2, Maximize } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Volume2 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
-import { TelegramFile } from '../../../types';
+import { TelegramFile } from '../../types';
 
 interface StreamInfo {
   token: string;

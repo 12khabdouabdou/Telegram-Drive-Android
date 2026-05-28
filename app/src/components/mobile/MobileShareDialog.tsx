@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { X, Link, Copy, Check, Shield, Clock, AlertCircle } from 'lucide-react';
-import { TelegramFile, ShareInfo } from '../../../types';
+import { X, Link, Copy, Check, Shield, Clock } from 'lucide-react';
+import { TelegramFile, ShareInfo } from '../../types';
 import { invoke } from '@tauri-apps/api/core';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface ShareDialogProps {
   file: TelegramFile;

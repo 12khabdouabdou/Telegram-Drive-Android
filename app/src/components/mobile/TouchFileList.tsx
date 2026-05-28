@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DownloadCloud, Trash2, MoreVertical, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
+import { DownloadCloud, Trash2, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
 import { TelegramFile } from '../../types';
 
 interface TouchFileListProps {

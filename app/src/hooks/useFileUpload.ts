@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 import { QueueItem } from '../types';
 
-export function useFileUpload(activeFolderId: number | null, store: any) {
+export function useFileUpload(store: any) {
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 

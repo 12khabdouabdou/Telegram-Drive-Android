@@ -36,7 +36,7 @@ export function MobileImageGallery({
   
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTimer = useRef<any>(null);
 
   const currentFile = files[currentIndex];
 

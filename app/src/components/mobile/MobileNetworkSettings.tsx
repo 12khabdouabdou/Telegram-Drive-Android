@@ -45,8 +45,6 @@ interface MobileNetworkSettingsProps {
 
 export function MobileNetworkSettings({ onClose }: MobileNetworkSettingsProps) {
   const [activeTab, setActiveTab] = useState<'proxy' | 'vpn' | 'test'>('proxy');
-  const [config, setConfig] = useState<NetworkConfigSnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -83,7 +81,6 @@ export function MobileNetworkSettings({ onClose }: MobileNetworkSettingsProps) {
   const loadConfig = async () => {
     try {
       const data = await invoke<NetworkConfigSnapshot>('cmd_get_network_config');
-      setConfig(data);
       
       // Populate form state
       setProxyEnabled(data.proxy.enabled);
