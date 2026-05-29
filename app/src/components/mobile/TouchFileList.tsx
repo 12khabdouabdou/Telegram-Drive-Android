@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CloudDownload, Trash2, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
 import { TelegramFile } from '../../types';
+import { invoke } from '@tauri-apps/api/core';
 
 interface TouchFileListProps {
   files: TelegramFile[];
@@ -46,6 +47,24 @@ export function TouchFileList({
   onPreview
 }: TouchFileListProps) {
   const [contextMenuFile, setContextMenuFile] = useState<TelegramFile | null>(null);
+  const [thumbnails, setThumbnails] = useState<Record<number, string>>({});
+
+  // Fetch thumbnails for image files
+  useEffect(() => {
+    const imageFiles = files.filter(f =>
+      /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name) && !thumbnails[f.id]
+    );
+    if (imageFiles.length === 0) return;
+    for (const file of imageFiles) {
+      invoke<string>('cmd_get_thumbnail', { messageId: file.id, folderId: file.folder_id ?? null })
+        .then(dataUrl => {
+          if (dataUrl) {
+            setThumbnails(prev => ({ ...prev, [file.id]: dataUrl }));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [files, thumbnails]);
 
   const handleLongPress = (e: React.TouchEvent | React.MouseEvent, file: TelegramFile) => {
     e.preventDefault();
@@ -116,8 +135,12 @@ clearTimeout(parseInt(timeoutId, 10));
                   </div>
                 )}
                 
-                <div className="aspect-[4/3] flex items-center justify-center bg-telegram-bg/50">
-                  <Icon className={`w-16 h-16 ${iconColor}`} />
+                <div className="aspect-[4/3] flex items-center justify-center bg-telegram-bg/50 overflow-hidden">
+                  {thumbnails[file.id] ? (
+                    <img src={thumbnails[file.id]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon className={`w-16 h-16 ${iconColor}`} />
+                  )}
                 </div>
                 
                 <div className="p-3">
@@ -309,8 +332,12 @@ clearTimeout(parseInt(timeoutId, 10));
                   <span className="text-black text-xs font-bold">✓</span>
                 </div>
               ) : (
-                <div className={`p-2 rounded-xl bg-telegram-bg/50 flex-shrink-0`}>
-                  <Icon className={`w-5 h-5 ${iconColor}`} />
+                <div className={`w-10 h-10 rounded-xl bg-telegram-bg/50 flex-shrink-0 flex items-center justify-center overflow-hidden`}>
+                  {thumbnails[file.id] ? (
+                    <img src={thumbnails[file.id]} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Icon className={`w-5 h-5 ${iconColor}`} />
+                  )}
                 </div>
               )}
               

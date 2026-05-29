@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { writeFile } from '@tauri-apps/plugin-fs';
 import { tempDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
-import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw } from 'lucide-react';
+import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
 import { TouchFileList } from './TouchFileList';
 import { ThemeToggle } from '../shared/ThemeToggle';
@@ -33,6 +33,9 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const [isSyncing, setIsSyncing] = useState(false);
   const [downloadQueue, setDownloadQueue] = useState<DownloadItem[]>([]);
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
+  const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [globalResults, setGlobalResults] = useState<TelegramFile[]>([]);
   
   // Modal states
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -206,6 +209,32 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     }
   }, []);
 
+  const handleDeleteFolder = useCallback(async (folderId: number) => {
+    try {
+      await invoke('cmd_delete_folder', { folderId });
+      toast.success('Folder deleted');
+      await scanFolders();
+      if (activeFolderId === folderId) {
+        setActiveFolderId(folders.length > 1 ? folders.find(f => f.id !== folderId)?.id || null : null);
+      }
+    } catch (err) {
+      toast.error(`Failed to delete folder: ${err}`);
+    }
+  }, [scanFolders, activeFolderId, folders]);
+
+  const handleDownloadFolder = useCallback(async () => {
+    if (!activeFolderId) return;
+    toast.info('Downloading all files in folder...');
+    try {
+      for (const file of displayedFiles) {
+        await invoke('cmd_download_file', { fileId: file.id, fileName: file.name });
+      }
+      toast.success('Folder download completed');
+    } catch (err) {
+      toast.error(`Folder download failed: ${err}`);
+    }
+  }, [activeFolderId, displayedFiles]);
+
   const handleBulkDownload = useCallback(async () => {
     if (selectedIds.length === 0) return;
     try {
@@ -248,6 +277,46 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   }, [activeFolderId]);
 
   const activeFolder = folders.find(f => f.id === activeFolderId);
+
+  const toggleSort = useCallback((field: 'name' | 'size' | 'date') => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  }, [sortBy]);
+
+  const sortedFiles = useMemo(() => {
+    const files = searchTerm.length > 2 && globalResults.length > 0
+      ? globalResults
+      : [...displayedFiles];
+    files.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortBy === 'size') cmp = (a.size || 0) - (b.size || 0);
+      else if (sortBy === 'date') cmp = (a.created_at || '').localeCompare(b.created_at || '');
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+    return files;
+  }, [displayedFiles, globalResults, searchTerm, sortBy, sortOrder]);
+
+  // Global search effect
+  useEffect(() => {
+    if (searchTerm.length > 2) {
+      invoke<any[]>('cmd_search_global', { query: searchTerm })
+        .then(results => {
+          setGlobalResults(results.map((f: any) => ({
+            ...f,
+            sizeStr: formatBytes(f.size),
+            type: f.icon_type || 'file'
+          })));
+        })
+        .catch(() => setGlobalResults([]));
+    } else {
+      setGlobalResults([]);
+    }
+  }, [searchTerm]);
 
   // Preview handler - check if it's an image and open gallery
   const handlePreview = useCallback((file: TelegramFile, allFilesList: TelegramFile[]) => {
@@ -361,7 +430,45 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                   <Folder className="w-5 h-5 text-telegram-primary" />
                   <span className="text-sm font-semibold">{activeFolder?.name || 'Saved Messages'}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  {/* Sort buttons */}
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-telegram-bg/50">
+                    {(['name', 'size', 'date'] as const).map(field => (
+                      <button
+                        key={field}
+                        onClick={() => toggleSort(field)}
+                        className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                          sortBy === field
+                            ? 'bg-telegram-primary/20 text-telegram-primary'
+                            : 'text-telegram-subtext/60 hover:text-telegram-subtext'
+                        }`}
+                      >
+                        {field === 'name' ? 'A-Z' : field === 'size' ? 'Size' : 'Date'}
+                        {sortBy === field && (
+                          <span className="text-[8px]">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Download folder */}
+                  <button
+                    onClick={handleDownloadFolder}
+                    disabled={displayedFiles.length === 0}
+                    className="p-1.5 rounded-xl text-xs bg-telegram-primary/10 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all disabled:opacity-40"
+                    title="Download all files"
+                  >
+                    <CloudDownload className="w-3.5 h-3.5" />
+                  </button>
+                  {/* Delete folder */}
+                  {activeFolderId && (
+                    <button
+                      onClick={() => handleDeleteFolder(activeFolderId)}
+                      className="p-1.5 rounded-xl text-xs bg-red-500/10 text-red-400 border border-red-500/10 active:scale-95 transition-all"
+                      title="Delete folder"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all"
@@ -428,19 +535,19 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                   Retry
                 </button>
               </div>
-            ) : displayedFiles.length === 0 ? (
+            ) : sortedFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-3 text-center">
                 <div className="p-4 rounded-full bg-telegram-primary/10 text-telegram-primary border border-telegram-primary/20">
                   <Folder className="w-8 h-8" />
                 </div>
                 <h3 className="text-base font-bold">No Files Here</h3>
                 <p className="text-xs text-telegram-subtext max-w-xs">
-                  {searchTerm ? 'Try a different search term' : 'Upload files to get started'}
+                  {searchTerm ? globalResults.length === 0 ? 'No results found across all chats' : 'Try a different search term' : 'Upload files to get started'}
                 </p>
               </div>
             ) : (
               <TouchFileList
-                files={displayedFiles}
+                files={sortedFiles}
                 viewMode={viewMode}
                 selectedIds={selectedIds}
                 onFileClick={(fileId) => {
