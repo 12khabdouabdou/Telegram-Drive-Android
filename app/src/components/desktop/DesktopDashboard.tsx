@@ -90,9 +90,9 @@ const {
     handleDelete, handleBulkDelete, handleBulkDownload,
     handleBulkMove, handleDownloadFolder, handleGlobalSearch
 
-} = useFileOperations(activeFolderId, selectedIds, setSelectedIds);
+} = useFileOperations(displayedFiles, selectedIds, setSelectedIds);
 
-    const { uploadQueue, setUploadQueue, handleManualUpload, handleFolderUpload, cancelAll: cancelUploads, cancelItem: cancelUploadItem, retryItem: retryUploadItem, isDragging } = useFileUpload(activeFolderId, store);
+    const { uploadQueue, setUploadQueue, handleManualUpload, handleFolderUpload, cancelAll: cancelUploads, cancelItem: cancelUploadItem, retryItem: retryUploadItem, isDragging } = useFileUpload(store);
     const { downloadQueue, queueDownload, clearFinished: clearDownloads, cancelAll: cancelDownloads, cancelItem: cancelDownloadItem, retryItem: retryDownloadItem } = useFileDownload(store);
 
 
@@ -404,7 +404,7 @@ const {
                     onShowMoveModal={() => setShowMoveModal(true)}
                     onBulkDownload={handleBulkDownload}
                     onBulkDelete={handleBulkDelete}
-                    onDownloadFolder={handleDownloadFolder}
+                    onDownloadFolder={() => handleDownloadFolder(activeFolderId, currentFolderName)}
                     viewMode={viewMode}
                     setViewMode={setViewMode}
                     searchTerm={searchTerm}

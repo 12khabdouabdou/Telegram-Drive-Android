@@ -14,7 +14,7 @@ import { formatBytes } from '../../utils';
 // Lazy load modals
 const CreateFolderModal = lazy(() => import('./CreateFolderModal').then(m => ({ default: m.CreateFolderModal })));
 const MoveToFolderModal = lazy(() => import('./MoveToFolderModal').then(m => ({ default: m.MoveToFolderModal })));
-const MobileShareDialog = lazy(() => import('./MobileShareDialog').then(m => ({ default: m.MobileShareDialog })));
+const MobileShareDialog = lazy(() => import('./MobileShareDialog').then(m => ({ default: m.ShareDialog })));
 const MobileImageGallery = lazy(() => import('./MobileImageGallery').then(m => ({ default: m.MobileImageGallery })));
 const MobileNetworkSettings = lazy(() => import('./MobileNetworkSettings').then(m => ({ default: m.MobileNetworkSettings })));
 const MobileShareDashboard = lazy(() => import('./MobileShareDashboard').then(m => ({ default: m.MobileShareDashboard })));
@@ -141,46 +141,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     } catch (err) {
       toast.error(`Bulk delete failed: ${err}`);
     }
-  }, [selectedIds, queryClient]);
-
-  const handleDownload = useCallback(async (file: TelegramFile) => {
-    const downloadId = `download_${file.id}_${Date.now()}`;
-    const newItem: DownloadItem = {
-      id: downloadId,
-      messageId: file.id,
-      filename: file.name,
-      folderId: activeFolderId,
-      status: 'downloading',
-      progress: 0
-    };
-    
-    setDownloadQueue(prev => [...prev, newItem]);
-    
-    try {
-      await invoke('cmd_download_file', { fileId: file.id, fileName: file.name });
-      setDownloadQueue(prev => prev.map(item => 
-        item.id === downloadId ? { ...item, status: 'success', progress: 100 } : item
-      ));
-      toast.success('Download completed');
-      setTimeout(() => {
-        setDownloadQueue(prev => prev.filter(item => item.id !== downloadId));
-      }, 3000);
-    } catch (err) {
-      setDownloadQueue(prev => prev.map(item => 
-        item.id === downloadId ? { ...item, status: 'error', error: String(err) } : item
-      ));
-      toast.error(`Download failed: ${err}`);
-    }
-  }, [activeFolderId]);
-
-  const handleBulkDownload = useCallback(async () => {
-    if (selectedIds.length === 0) return;
-    const filesToDownload = displayedFiles.filter((f: TelegramFile) => selectedIds.includes(f.id));
-    for (const file of filesToDownload) {
-      await handleDownload(file);
-    }
-    setSelectedIds([]);
-  }, [selectedIds, displayedFiles, handleDownload]);
+  }, [searchTerm, queryClient, folders]);
 
   const handleUpload = useCallback(async () => {
     try {
@@ -218,31 +179,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       toast.error(`Upload failed: ${err}`);
     }
   }, [activeFolderId]);
-
-  const handleCreateFolder = useCallback(async (name: string) => {
-    try {
-      await invoke('cmd_create_folder', { name });
-      toast.success('Folder created');
-      await scanFolders();
-    } catch (err) {
-      toast.error(`Failed to create folder: ${err}`);
-      throw err;
-    }
-  }, [scanFolders]);
-
-  const handleMove = useCallback(async (targetFolderId: number | null) => {
-    try {
-      await invoke('cmd_move_files', {
-        fileIds: selectedIds,
-        targetFolderId
-      });
-      toast.success(`Moved ${selectedIds.length} file(s)`);
-      queryClient.invalidateQueries({ queryKey: ['files'] });
-      setSelectedIds([]);
-    } catch (err) {
-      toast.error(`Move failed: ${err}`);
-    }
-  }, [selectedIds, queryClient]);
 
   const handleLogout = useCallback(async () => {
     try {

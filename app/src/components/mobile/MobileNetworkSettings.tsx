@@ -45,6 +45,7 @@ interface MobileNetworkSettingsProps {
 
 export function MobileNetworkSettings({ onClose }: MobileNetworkSettingsProps) {
   const [activeTab, setActiveTab] = useState<'proxy' | 'vpn' | 'test'>('proxy');
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);

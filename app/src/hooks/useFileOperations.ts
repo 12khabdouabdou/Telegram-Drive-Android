@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { TelegramFile } from '../types';
 
 export function useFileOperations(
+  files: TelegramFile[],
   selectedIds: number[],
   setSelectedIds: (ids: number[]) => void,
 ) {
