@@ -104,6 +104,32 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx tauri android build --apk true --ci
 
+      - name: Sign APK with debug key
+        run: |
+          # Generate debug keystore
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey \
+            -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+          # Find the unsigned APK
+          APK=$(find app/src-tauri/gen/android -name "*-unsigned.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "No unsigned APK found, looking for any APK..."
+            APK=$(find app/src-tauri/gen/android -name "*.apk" | head -1)
+          fi
+
+          if [ -n "$APK" ]; then
+            echo "Signing APK: $APK"
+            BUILD_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
+            "$BUILD_TOOLS/apksigner" sign --ks debug.keystore --ks-pass pass:android \
+              --ks-key-alias androiddebugkey "$APK"
+            "$BUILD_TOOLS/apksigner" verify "$APK"
+            echo "APK signed successfully: $APK"
+          else
+            echo "No APK found to sign"
+            exit 1
+          fi
+
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
