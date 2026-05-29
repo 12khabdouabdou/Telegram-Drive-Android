@@ -10,7 +10,7 @@ interface TouchFileListProps {
   onFileClick: (fileId: number) => void;
   onFileLongPress: (fileId: number) => void;
   onDownload: (file: TelegramFile) => void;
-  onDelete: (fileId: number) => void;
+  onDelete: (fileId: number, folderId?: number | null) => void;
   onShare?: (file: TelegramFile) => void;
   onPreview?: (file: TelegramFile) => void;
 }
@@ -201,7 +201,7 @@ clearTimeout(parseInt(timeoutId, 10));
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDelete(file.id);
+                          onDelete(file.id, file.folder_id);
                         }}
                         className="p-1.5 rounded-lg bg-red-500/15 text-red-400 active:scale-90 transition-all"
                       >
@@ -283,7 +283,7 @@ clearTimeout(parseInt(timeoutId, 10));
                 )}
                 <button
                   onClick={() => {
-                    onDelete(contextMenuFile.id);
+                    onDelete(contextMenuFile.id, contextMenuFile.folder_id);
                     setContextMenuFile(null);
                   }}
                   className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 transition-all"
@@ -397,7 +397,7 @@ clearTimeout(parseInt(timeoutId, 10));
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(file.id);
+                    onDelete(file.id, file.folder_id);
                   }}
                   className="p-2.5 rounded-xl bg-red-500/10 text-red-400 active:scale-90 transition-all"
                 >
@@ -467,7 +467,7 @@ clearTimeout(parseInt(timeoutId, 10));
               )}
               <button
                 onClick={() => {
-                  onDelete(contextMenuFile.id);
+                  onDelete(contextMenuFile.id, contextMenuFile.folder_id);
                   setContextMenuFile(null);
                 }}
                 className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20"

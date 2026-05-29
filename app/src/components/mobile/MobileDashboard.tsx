@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } fro
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { writeFile } from '@tauri-apps/plugin-fs';
-import { tempDir, join } from '@tauri-apps/api/path';
+import { cacheDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
@@ -124,9 +124,9 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   }, []);
 
   // File operations
-  const handleDelete = useCallback(async (fileId: number) => {
+  const handleDelete = useCallback(async (fileId: number, fId?: number | null) => {
     try {
-      await invoke('cmd_delete_file', { messageId: fileId });
+      await invoke('cmd_delete_file', { messageId: fileId, folderId: fId ?? null });
       toast.success('File deleted');
       queryClient.invalidateQueries({ queryKey: ['files'] });
       setSelectedIds([]);
@@ -157,7 +157,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const dir = await tempDir();
+    const dir = await cacheDir();
     const totalFiles = files.length;
 
     for (let i = 0; i < totalFiles; i++) {
@@ -218,7 +218,13 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
 
   const handleDownload = useCallback(async (file: TelegramFile) => {
     try {
-      await invoke('cmd_download_file', { fileId: file.id, fileName: file.name });
+      const dir = await cacheDir();
+      const savePath = await join(dir, file.name);
+      await invoke('cmd_download_file', {
+        messageId: file.id,
+        savePath,
+        folderId: file.folder_id ?? null,
+      });
       toast.success('Download started');
     } catch (err) {
       toast.error(`Download failed: ${err}`);
@@ -242,8 +248,14 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (!activeFolderId) return;
     toast.info('Downloading all files in folder...');
     try {
+      const dir = await cacheDir();
       for (const file of displayedFiles) {
-        await invoke('cmd_download_file', { fileId: file.id, fileName: file.name });
+        const savePath = await join(dir, file.name);
+        await invoke('cmd_download_file', {
+          messageId: file.id,
+          savePath,
+          folderId: file.folder_id ?? null,
+        });
       }
       toast.success('Folder download completed');
     } catch (err) {
@@ -254,14 +266,20 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const handleBulkDownload = useCallback(async () => {
     if (selectedIds.length === 0) return;
     try {
+      const dir = await cacheDir();
       for (const id of selectedIds) {
-        await invoke('cmd_download_file', { fileId: id, fileName: `file_${id}` });
+        const savePath = await join(dir, `file_${id}`);
+        await invoke('cmd_download_file', {
+          messageId: id,
+          savePath,
+          folderId: activeFolderId ?? null,
+        });
       }
       toast.success(`Downloaded ${selectedIds.length} files`);
     } catch (err) {
       toast.error(`Bulk download failed: ${err}`);
     }
-  }, [selectedIds]);
+  }, [selectedIds, activeFolderId]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -351,7 +369,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   }, [handleDownload]);
 
   return (
-    <div className="flex flex-col h-screen w-full bg-telegram-bg text-telegram-text overflow-hidden select-none font-sans" style={{ touchAction: 'manipulation' }}>
+    <div className="flex flex-col h-full w-full bg-telegram-bg text-telegram-text overflow-hidden select-none font-sans" style={{ touchAction: 'manipulation' }}>
       {/* Top Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-telegram-hover/40 to-telegram-bg border-b border-telegram-border/60 shadow-lg sticky top-0 z-40">
         <div className="flex items-center gap-3 flex-1">
