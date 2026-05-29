@@ -1,11 +1,9 @@
-import { useState } from 'react';
 import { 
-  Download, Trash2, Folder, Share2, Pen, Copy, 
-  ExternalLink, X, FileText, Image, Music, Clapperboard, File 
+  Download, Trash2, Folder, Share2, Pen,
+  ExternalLink, X, FileText, Clapperboard, File 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TelegramFile } from '../../types';
-import { invoke } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 
 interface ContextMenuProps {
@@ -15,7 +13,6 @@ interface ContextMenuProps {
   onDownload: () => void;
   onDelete: () => void;
   onShare: () => void;
-  onMove: () => void;
   onPreview: () => void;
 }
 
@@ -36,32 +33,9 @@ export function ContextMenu({
   onDownload,
   onDelete,
   onShare,
-  onMove,
   onPreview
 }: ContextMenuProps) {
   const Icon = getFileIcon(file);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyLink = async () => {
-    try {
-      await invoke('cmd_create_share', {
-        folderId: null,
-        messageId: file.id,
-        fileName: file.name,
-        fileSize: file.size,
-        password: null,
-        expiryHours: null
-      }).then((shareInfo: any) => {
-        navigator.clipboard.writeText(shareInfo.link);
-        setCopied(true);
-        toast.success('Link copied to clipboard');
-        setTimeout(() => setCopied(false), 2000);
-      });
-    } catch (err) {
-      toast.error(`Failed to copy link: ${err}`);
-    }
-    onClose();
-  };
 
   const menuItems = [
     {

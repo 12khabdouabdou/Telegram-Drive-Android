@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import { writeBinaryFile } from '@tauri-apps/plugin-fs';
+import { writeFile } from '@tauri-apps/plugin-fs';
 import { tempDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw } from 'lucide-react';
@@ -163,7 +163,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       const bytes = await file.arrayBuffer();
 
       const tempPath = await join(dir, file.name);
-      await writeBinaryFile(tempPath, new Uint8Array(bytes));
+      await writeFile(tempPath, new Uint8Array(bytes));
 
       const newItem: QueueItem = {
         id: uploadId,
