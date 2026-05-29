@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-dialog';
+import { writeBinaryFile } from '@tauri-apps/plugin-fs';
+import { tempDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
@@ -40,6 +41,8 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const [previewGallery, setPreviewGallery] = useState<{ files: TelegramFile[]; index: number } | null>(null);
   const [showNetworkSettings, setShowNetworkSettings] = useState(false);
   const [showShareDashboard, setShowShareDashboard] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { isAndroid } = usePlatform();
   const storeRef = { current: null } as any;
@@ -144,40 +147,54 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   }, [searchTerm, queryClient, folders]);
 
   const handleUpload = useCallback(async () => {
-    try {
-      const selected = await open({
-        multiple: true,
-        title: 'Select files to upload',
-        filters: [{ name: 'All Files', extensions: ['*'] }]
-      });
-      
-      if (selected && Array.isArray(selected)) {
-        const uploadId = `upload_${Date.now()}`;
-        const newItem: QueueItem = {
-          id: uploadId,
-          path: selected[0],
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFilesSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const dir = await tempDir();
+    const totalFiles = files.length;
+
+    for (let i = 0; i < totalFiles; i++) {
+      const file = files[i];
+      const uploadId = `upload_${Date.now()}_${i}`;
+      const bytes = await file.arrayBuffer();
+
+      const tempPath = await join(dir, file.name);
+      await writeBinaryFile(tempPath, new Uint8Array(bytes));
+
+      const newItem: QueueItem = {
+        id: uploadId,
+        path: tempPath,
+        folderId: activeFolderId,
+        status: 'uploading',
+        progress: 0
+      };
+
+      setUploadQueue(prev => [...prev, newItem]);
+
+      try {
+        await invoke('initiate_upload', {
+          path: tempPath,
           folderId: activeFolderId,
-          status: 'uploading',
-          progress: 0
-        };
-        
-        setUploadQueue(prev => [...prev, newItem]);
-        
-        // Call initiate_upload
-        await invoke<{ upload_id: string; file_path: string }>('initiate_upload', {
-          folderId: activeFolderId,
-          filePath: selected[0],
-          fileName: selected[0].split('/').pop() || 'file'
+          transferId: uploadId,
         });
-        
-        toast.success('Upload started');
-        setTimeout(() => {
-          setUploadQueue(prev => prev.filter(item => item.id !== uploadId));
-        }, 5000);
+        setUploadQueue(prev => prev.map(item =>
+          item.id === uploadId ? { ...item, status: 'success', progress: 100 } : item
+        ));
+        toast.success(`Uploaded: ${file.name}`);
+      } catch (err) {
+        setUploadQueue(prev => prev.map(item =>
+          item.id === uploadId ? { ...item, status: 'error', error: String(err) } : item
+        ));
+        toast.error(`Upload failed: ${file.name} — ${err}`);
       }
-    } catch (err) {
-      toast.error(`Upload failed: ${err}`);
     }
+
+    // Reset file input so the same file can be re-picked
+    e.target.value = '';
   }, [activeFolderId]);
 
   const handleDownload = useCallback(async (file: TelegramFile) => {
@@ -249,7 +266,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   }, [handleDownload]);
 
   return (
-    <div className="flex flex-col h-screen w-full bg-telegram-bg text-telegram-text overflow-hidden select-none font-sans">
+    <div className="flex flex-col h-screen w-full bg-telegram-bg text-telegram-text overflow-hidden select-none font-sans" style={{ touchAction: 'manipulation' }}>
       {/* Top Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-telegram-hover/40 to-telegram-bg border-b border-telegram-border/60 shadow-lg sticky top-0 z-40">
         <div className="flex items-center gap-3 flex-1">
@@ -334,7 +351,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-4 py-3 space-y-4 pb-24 scroll-smooth">
+      <main className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[88px]' : 'pb-[28px]'}`}>
         {activeTab === 'files' && (
           <div className="space-y-4 animate-fade-in">
             {/* Folder Header */}
@@ -374,6 +391,13 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                   <Upload className="w-5 h-5" />
                   Upload
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFilesSelected}
+                />
                 <button
                   onClick={() => setShowCreateFolder(true)}
                   className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-telegram-hover/30 hover:bg-telegram-hover/50 border border-telegram-border/30 text-telegram-text font-semibold text-sm active:scale-98 transition-all"

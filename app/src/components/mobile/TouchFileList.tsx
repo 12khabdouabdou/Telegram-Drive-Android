@@ -201,7 +201,7 @@ export function TouchFileList({
                 setContextMenuFile(null);
               }}
             />
-            <div className="fixed inset-x-4 bottom-20 z-[95] bg-telegram-surface border border-telegram-border rounded-3xl shadow-2xl overflow-hidden">
+            <div className="fixed inset-x-4 bottom-[88px] z-[95] bg-telegram-surface border border-telegram-border rounded-3xl shadow-2xl overflow-hidden">
               <div className="p-4 border-b border-telegram-border/50 flex items-center gap-4">
                 <div className="p-3 rounded-2xl bg-telegram-primary/10">
                   {(() => {
@@ -315,7 +315,7 @@ export function TouchFileList({
               )}
               
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-telegram-text truncate max-w-[180px] leading-snug">
+                <p className="text-xs font-semibold text-telegram-text truncate leading-snug">
                   {file.name}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
@@ -387,7 +387,7 @@ export function TouchFileList({
             className="fixed inset-0 z-[90] bg-black/60"
             onClick={() => setContextMenuFile(null)}
           />
-          <div className="fixed inset-x-4 bottom-20 z-[95] bg-telegram-surface border border-telegram-border rounded-3xl shadow-2xl overflow-hidden">
+          <div className="fixed inset-x-4 bottom-[88px] z-[95] bg-telegram-surface border border-telegram-border rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-4 border-b border-telegram-border/50 flex items-center gap-4">
               <div className="p-3 rounded-2xl bg-telegram-primary/10">
                 {(() => {
