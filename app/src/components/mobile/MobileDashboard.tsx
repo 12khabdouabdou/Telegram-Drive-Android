@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { cacheDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
@@ -80,6 +81,71 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     };
     initConnection();
   }, []);
+
+  // Listen for progress events
+  useEffect(() => {
+    let unlistenUpload: () => void;
+    let unlistenDownload: () => void;
+
+    const setupListeners = async () => {
+      unlistenUpload = await listen('upload-progress', (event: any) => {
+        const payload = event.payload;
+        setUploadQueue(prev => prev.map(item => 
+          item.id === payload.id 
+            ? { ...item, progress: payload.percent, uploadedBytes: payload.uploaded_bytes, totalBytes: payload.total_bytes, speedBytesPerSec: payload.speed_bytes_per_sec } 
+            : item
+        ));
+      });
+
+      unlistenDownload = await listen('download-progress', (event: any) => {
+        const payload = event.payload;
+        setDownloadQueue(prev => prev.map(item => 
+          item.id === payload.id 
+            ? { ...item, progress: payload.percent, uploadedBytes: payload.uploaded_bytes, totalBytes: payload.total_bytes, speedBytesPerSec: payload.speed_bytes_per_sec } 
+            : item
+        ));
+      });
+    };
+
+    setupListeners();
+
+    return () => {
+      if (unlistenUpload) unlistenUpload();
+      if (unlistenDownload) unlistenDownload();
+    };
+  }, []);
+
+  // Load queues from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedUploads = localStorage.getItem('mobile_upload_queue');
+      if (savedUploads) {
+        const parsed = JSON.parse(savedUploads);
+        setUploadQueue(parsed.map((i: any) => 
+          i.status === 'uploading' ? { ...i, status: 'error', error: 'Interrupted by app exit' } : i
+        ));
+      }
+      
+      const savedDownloads = localStorage.getItem('mobile_download_queue');
+      if (savedDownloads) {
+        const parsed = JSON.parse(savedDownloads);
+        setDownloadQueue(parsed.map((i: any) => 
+          i.status === 'downloading' ? { ...i, status: 'error', error: 'Interrupted by app exit' } : i
+        ));
+      }
+    } catch (err) {
+      console.error("Failed to restore queues", err);
+    }
+  }, []);
+
+  // Save queues to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('mobile_upload_queue', JSON.stringify(uploadQueue));
+  }, [uploadQueue]);
+
+  useEffect(() => {
+    localStorage.setItem('mobile_download_queue', JSON.stringify(downloadQueue));
+  }, [downloadQueue]);
 
   // Query files
   const { data: allFiles = [], isLoading, error, refetch } = useQuery({
@@ -221,6 +287,19 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   }, [activeFolderId, queryClient]);
 
   const handleDownload = useCallback(async (file: TelegramFile) => {
+    const downloadId = `dl_${file.id}_${Date.now()}`;
+    const newItem: DownloadItem = {
+      id: downloadId,
+      messageId: file.id,
+      filename: file.name,
+      folderId: file.folder_id ?? null,
+      status: 'downloading',
+      progress: 0
+    };
+    
+    setDownloadQueue(prev => [...prev, newItem]);
+    toast.success('Download started');
+
     try {
       const dir = await cacheDir();
       const savePath = await join(dir, file.name);
@@ -228,9 +307,16 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
         messageId: file.id,
         savePath,
         folderId: file.folder_id ?? null,
+        transferId: downloadId
       });
-      toast.success('Download started');
+      setDownloadQueue(prev => prev.map(item => 
+        item.id === downloadId ? { ...item, status: 'success', progress: 100 } : item
+      ));
+      toast.success(`Download completed: ${file.name}`);
     } catch (err) {
+      setDownloadQueue(prev => prev.map(item => 
+        item.id === downloadId ? { ...item, status: 'error', error: String(err) } : item
+      ));
       toast.error(`Download failed: ${err}`);
     }
   }, []);
@@ -254,12 +340,34 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     try {
       const dir = await cacheDir();
       for (const file of displayedFiles) {
-        const savePath = await join(dir, file.name);
-        await invoke('cmd_download_file', {
+        const downloadId = `dl_${file.id}_${Date.now()}`;
+        const newItem: DownloadItem = {
+          id: downloadId,
           messageId: file.id,
-          savePath,
+          filename: file.name,
           folderId: file.folder_id ?? null,
-        });
+          status: 'downloading',
+          progress: 0
+        };
+        setDownloadQueue(prev => [...prev, newItem]);
+
+        const savePath = await join(dir, file.name);
+        try {
+          await invoke('cmd_download_file', {
+            messageId: file.id,
+            savePath,
+            folderId: file.folder_id ?? null,
+            transferId: downloadId
+          });
+          setDownloadQueue(prev => prev.map(item => 
+            item.id === downloadId ? { ...item, status: 'success', progress: 100 } : item
+          ));
+        } catch (err) {
+          setDownloadQueue(prev => prev.map(item => 
+            item.id === downloadId ? { ...item, status: 'error', error: String(err) } : item
+          ));
+          toast.error(`Download failed: ${file.name}`);
+        }
       }
       toast.success('Folder download completed');
     } catch (err) {
@@ -269,15 +377,38 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
 
   const handleBulkDownload = useCallback(async () => {
     if (selectedIds.length === 0) return;
+    toast.info(`Starting download of ${selectedIds.length} files...`);
     try {
       const dir = await cacheDir();
       for (const id of selectedIds) {
-        const savePath = await join(dir, `file_${id}`);
-        await invoke('cmd_download_file', {
+        const downloadId = `dl_${id}_${Date.now()}`;
+        const filename = `file_${id}`; // We don't have the file name easily accessible here
+        const newItem: DownloadItem = {
+          id: downloadId,
           messageId: id,
-          savePath,
+          filename: filename,
           folderId: activeFolderId ?? null,
-        });
+          status: 'downloading',
+          progress: 0
+        };
+        setDownloadQueue(prev => [...prev, newItem]);
+
+        const savePath = await join(dir, filename);
+        try {
+          await invoke('cmd_download_file', {
+            messageId: id,
+            savePath,
+            folderId: activeFolderId ?? null,
+            transferId: downloadId
+          });
+          setDownloadQueue(prev => prev.map(item => 
+            item.id === downloadId ? { ...item, status: 'success', progress: 100 } : item
+          ));
+        } catch (err) {
+          setDownloadQueue(prev => prev.map(item => 
+            item.id === downloadId ? { ...item, status: 'error', error: String(err) } : item
+          ));
+        }
       }
       toast.success(`Downloaded ${selectedIds.length} files`);
     } catch (err) {
