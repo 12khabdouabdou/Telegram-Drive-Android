@@ -434,7 +434,7 @@ pub async fn cmd_download_file(
 
     let total_size = match &media {
         Media::Document(d) => d.size() as u64,
-        Media::Photo(_) => 1024 * 1024,
+        Media::Photo(p) => p.thumbs().iter().map(|t| t.size()).max().unwrap_or(0).max(1024 * 1024) as u64,
         _ => 0,
     };
     
@@ -582,7 +582,7 @@ pub async fn cmd_get_files(
                     let e = std::path::Path::new(&n).extension().map(|os| os.to_str().unwrap_or("").to_string());
                     (n, s, m, e)
                 },
-                Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into()), Some("jpg".into())),
+                Media::Photo(_) => ("Photo.jpg".to_string(), 1024 * 1024, Some("image/jpeg".into()), Some("jpg".into())),
                 _ => ("Unknown".to_string(), 0, None, None),
             };
             files.push(FileMetadata {

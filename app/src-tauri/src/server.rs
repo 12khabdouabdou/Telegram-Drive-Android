@@ -94,7 +94,7 @@ async fn stream_media(
                                 log::debug!("Stream request: Message and media found for msg {}", message_id);
                                 let size = match &media {
                                     Media::Document(d) => d.size() as u64,
-                                    Media::Photo(_) => 0, 
+                                    Media::Photo(_) => 1024 * 1024, 
                                     _ => 0,
                                 };
                                 

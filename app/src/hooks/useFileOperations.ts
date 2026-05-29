@@ -16,7 +16,7 @@ export function useFileOperations(
   const handleDelete = useCallback(async (fileId: number) => {
     setIsDeleting(true);
     try {
-      await invoke('cmd_delete_file', { fileId });
+      await invoke('cmd_delete_file', { messageId: fileId });
       toast.success('File deleted');
       setSelectedIds([]);
     } catch (err) {
@@ -33,7 +33,7 @@ export function useFileOperations(
     setIsDeleting(true);
     try {
       for (const id of selectedIds) {
-        await invoke('cmd_delete_file', { fileId: id });
+        await invoke('cmd_delete_file', { messageId: id });
       }
       toast.success(`Deleted ${selectedIds.length} files`);
       setSelectedIds([]);

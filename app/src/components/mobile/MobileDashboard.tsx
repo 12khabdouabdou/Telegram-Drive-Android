@@ -123,7 +123,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   // File operations
   const handleDelete = useCallback(async (fileId: number) => {
     try {
-      await invoke('cmd_delete_file', { fileId });
+      await invoke('cmd_delete_file', { messageId: fileId });
       toast.success('File deleted');
       queryClient.invalidateQueries({ queryKey: ['files'] });
       setSelectedIds([]);
@@ -136,7 +136,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (selectedIds.length === 0) return;
     try {
       for (const id of selectedIds) {
-        await invoke('cmd_delete_file', { fileId: id });
+        await invoke('cmd_delete_file', { messageId: id });
       }
       toast.success(`Deleted ${selectedIds.length} files`);
       queryClient.invalidateQueries({ queryKey: ['files'] });
@@ -351,7 +351,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       )}
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[88px]' : 'pb-[28px]'}`}>
+      <main className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[170px]' : 'pb-[100px]'}`}>
         {activeTab === 'files' && (
           <div className="space-y-4 animate-fade-in">
             {/* Folder Header */}

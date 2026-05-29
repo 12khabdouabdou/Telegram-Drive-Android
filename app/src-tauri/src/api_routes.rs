@@ -203,7 +203,7 @@ async fn api_list_files(
                     Media::Document(d) => {
                         (d.name().to_string(), d.size(), d.mime_type().map(|s| s.to_string()))
                     }
-                    Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
+                    Media::Photo(_) => ("Photo.jpg".to_string(), 1024 * 1024, Some("image/jpeg".into())),
                     _ => ("Unknown".to_string(), 0, None),
                 };
 
@@ -395,7 +395,7 @@ async fn api_get_file(
                         Media::Document(d) => {
                             (d.name().to_string(), d.size(), d.mime_type().map(|s| s.to_string()))
                         }
-                        Media::Photo(_) => ("Photo.jpg".to_string(), 0, Some("image/jpeg".into())),
+                        Media::Photo(_) => ("Photo.jpg".to_string(), 1024 * 1024, Some("image/jpeg".into())),
                         _ => ("Unknown".to_string(), 0, None),
                     };
                     return HttpResponse::Ok().json(ApiFile {
