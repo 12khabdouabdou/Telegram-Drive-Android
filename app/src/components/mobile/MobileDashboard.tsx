@@ -180,6 +180,27 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     }
   }, [activeFolderId]);
 
+  const handleDownload = useCallback(async (file: TelegramFile) => {
+    try {
+      await invoke('cmd_download_file', { fileId: file.id, fileName: file.name });
+      toast.success('Download started');
+    } catch (err) {
+      toast.error(`Download failed: ${err}`);
+    }
+  }, []);
+
+  const handleBulkDownload = useCallback(async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      for (const id of selectedIds) {
+        await invoke('cmd_download_file', { fileId: id, fileName: `file_${id}` });
+      }
+      toast.success(`Downloaded ${selectedIds.length} files`);
+    } catch (err) {
+      toast.error(`Bulk download failed: ${err}`);
+    }
+  }, [selectedIds]);
+
   const handleLogout = useCallback(async () => {
     try {
       await invoke('cmd_logout');

@@ -404,7 +404,7 @@ const {
                     onShowMoveModal={() => setShowMoveModal(true)}
                     onBulkDownload={handleBulkDownload}
                     onBulkDelete={handleBulkDelete}
-                    onDownloadFolder={() => handleDownloadFolder(activeFolderId, currentFolderName)}
+                    onDownloadFolder={() => handleDownloadFolder(activeFolderId ?? 0, currentFolderName)}
                     viewMode={viewMode}
                     setViewMode={setViewMode}
                     searchTerm={searchTerm}
