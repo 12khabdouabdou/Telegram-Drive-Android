@@ -16,8 +16,9 @@ export function BottomNavBar({ activeTab, setActiveTab, isAndroid }: BottomNavBa
   return (
     <nav 
       className={`fixed left-4 right-4 bg-telegram-surface/85 backdrop-blur-xl border border-telegram-border/50 rounded-2xl shadow-2xl flex justify-around py-3 z-50 transition-all duration-300 ${
-        isAndroid ? 'bottom-20' : 'bottom-5'
+        isAndroid ? 'bottom-4' : 'bottom-5'
       }`}
+      style={isAndroid ? { bottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' } : undefined}
     >
       {tabs.map(({ id, label, icon: Icon }) => {
         const isActive = activeTab === id;

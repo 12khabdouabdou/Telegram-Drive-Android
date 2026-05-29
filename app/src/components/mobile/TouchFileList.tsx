@@ -62,7 +62,9 @@ export function TouchFileList({
             setThumbnails(prev => ({ ...prev, [file.id]: dataUrl }));
           }
         })
-        .catch(() => {});
+        .catch((err) => {
+          console.warn(`Thumbnail failed for ${file.name} (id=${file.id}):`, err);
+        });
     }
   }, [files, thumbnails]);
 

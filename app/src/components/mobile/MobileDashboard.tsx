@@ -163,15 +163,30 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     for (let i = 0; i < totalFiles; i++) {
       const file = files[i];
       const uploadId = `upload_${Date.now()}_${i}`;
-      const bytes = await file.arrayBuffer();
+
+      let bytes: ArrayBuffer;
+      try {
+        bytes = await file.arrayBuffer();
+      } catch (err) {
+        console.error('Failed to read file:', file.name, err);
+        toast.error(`Failed to read: ${file.name}`);
+        continue;
+      }
 
       const tempPath = await join(dir, file.name);
-      await writeFile(tempPath, new Uint8Array(bytes));
+      console.log(`Writing ${file.name} (${bytes.byteLength} bytes) to ${tempPath}`);
+      try {
+        await writeFile(tempPath, new Uint8Array(bytes));
+      } catch (err) {
+        console.error('Failed to write temp file:', tempPath, err);
+        toast.error(`Failed to write temp file: ${file.name}`);
+        continue;
+      }
 
       const newItem: QueueItem = {
         id: uploadId,
         path: tempPath,
-        folderId: activeFolderId,
+        folderId: activeFolderId ?? null,
         status: 'uploading',
         progress: 0
       };
@@ -179,9 +194,10 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       setUploadQueue(prev => [...prev, newItem]);
 
       try {
+        console.log(`Initiating upload for ${tempPath}, folderId=${activeFolderId}, transferId=${uploadId}`);
         await invoke('initiate_upload', {
           path: tempPath,
-          folderId: activeFolderId,
+          folderId: activeFolderId ?? null,
           transferId: uploadId,
         });
         setUploadQueue(prev => prev.map(item =>
@@ -420,7 +436,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       )}
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[170px]' : 'pb-[100px]'}`}>
+      <main className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[130px]' : 'pb-[100px]'}`}>
         {activeTab === 'files' && (
           <div className="space-y-4 animate-fade-in">
             {/* Folder Header */}

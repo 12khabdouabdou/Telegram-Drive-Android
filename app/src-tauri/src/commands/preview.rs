@@ -227,7 +227,8 @@ pub async fn cmd_get_thumbnail(
     // No cache, need to fetch from Telegram
     let client_opt = { state.client.lock().await.clone() };
     if client_opt.is_none() {
-        return Ok("".to_string());
+        log::error!("cmd_get_thumbnail: Telegram client not connected");
+        return Err("Telegram client not connected".to_string());
     }
     let client = client_opt.unwrap();
 
@@ -284,7 +285,13 @@ pub async fn cmd_get_thumbnail(
                         };
                         let b64 = general_purpose::STANDARD.encode(&bytes);
                         return Ok(format!("data:{};base64,{}", mime, b64));
+                    } else {
+                        log::error!("cmd_get_thumbnail: Failed to read downloaded thumbnail from disk for message {}", message_id);
+                        return Err("Failed to read downloaded thumbnail".to_string());
                     }
+                } else {
+                    log::error!("cmd_get_thumbnail: Failed to download thumbnail media for message {}", message_id);
+                    return Err("Failed to download thumbnail media".to_string());
                 }
             }
         }
