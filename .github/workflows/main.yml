@@ -114,7 +114,8 @@ jobs:
         working-directory: app
         run: npm install
 
-      - name: build the app
+      - name: build desktop app
+        if: ${{ !matrix.is_android }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -139,12 +140,19 @@ jobs:
           projectPath: ./app
           args: ${{ matrix.args }}
 
+      - name: build Android APK
+        if: matrix.is_android
+        working-directory: app
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tauri android build --apk --ci
+
       - name: Upload Android APK as artifact
         if: matrix.is_android
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
           path: |
-            app/src-tauri/target/aarch64-linux-android/release/bundle/apk/*.apk
-            app/src-tauri/target/*/release/bundle/apk/*.apk
+            app/src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+            app/src-tauri/gen/android/app/build/outputs/apk/*/release/*.apk
           retention-days: 7
