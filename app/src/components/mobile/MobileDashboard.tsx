@@ -773,8 +773,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
               </button>
             </div>
 
-            {/* Sharing */}
-            <div className="p-4 rounded-2xl bg-telegram-hover/20 border border-telegram-border/30 space-y-4">
             {/* Auto-Backup */}
             <div className="p-4 rounded-2xl bg-telegram-hover/20 border border-telegram-border/30 space-y-4">
               <h3 className="text-xs font-bold text-telegram-primary tracking-wide uppercase">Auto-Backup</h3>
@@ -787,6 +785,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
               </button>
             </div>
 
+            {/* Sharing */}
             <div className="p-4 rounded-2xl bg-telegram-hover/20 border border-telegram-border/30 space-y-4">
               <h3 className="text-xs font-bold text-telegram-primary tracking-wide uppercase">Sharing</h3>
               <button
@@ -854,7 +853,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       </Suspense>
 
       <Suspense fallback={null}>
-      <Suspense fallback={null}>
         {showAutoBackup && (
           <MobileAutoBackup
             onClose={() => setShowAutoBackup(false)}
@@ -863,6 +861,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
         )}
       </Suspense>
 
+      <Suspense fallback={null}>
         {showMoveToFolder && (
           <MoveToFolderModal
             selectedFileIds={selectedIds}
