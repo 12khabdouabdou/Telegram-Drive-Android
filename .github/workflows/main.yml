@@ -160,7 +160,7 @@ jobs:
         working-directory: app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx tauri android build --apk true --ci
+        run: npx tauri android build --apk --ci
 
       - name: Sign APK with debug key
         if: matrix.is_android
