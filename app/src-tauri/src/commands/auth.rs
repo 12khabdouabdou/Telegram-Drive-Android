@@ -268,17 +268,14 @@ pub async fn cmd_auth_request_code(
         return Err("API Hash cannot be empty.".to_string());
     }
 
-    // Store API ID
+    // Store API ID and initialize client, all within a single 30s timeout
     *state.api_id.lock().await = Some(api_id);
-
-    let client_handle = timeout(Duration::from_secs(15), ensure_client_initialized(&app_handle, &state, api_id))
-        .await
-        .map_err(|_| "Client initialization timed out. Check your network.".to_string())?
-        .map_err(|e| e)?;
-    
     log::info!("Requesting code for {}", phone);
     
     timeout(Duration::from_secs(30), async {
+        let client_handle = ensure_client_initialized(&app_handle, &state, api_id).await
+            .map_err(|e| e)?;
+        
         let mut last_error = String::new();
         
         // Retry up to 2 times for AUTH_RESTART or 500

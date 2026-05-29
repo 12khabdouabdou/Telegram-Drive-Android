@@ -144,7 +144,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     } catch (err) {
       toast.error(`Bulk delete failed: ${err}`);
     }
-  }, [searchTerm, queryClient, folders]);
+  }, [selectedIds, queryClient, setSelectedIds]);
 
   const handleUpload = useCallback(async () => {
     fileInputRef.current?.click();

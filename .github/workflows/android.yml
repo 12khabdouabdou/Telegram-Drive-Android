@@ -138,7 +138,13 @@ jobs:
             "$BUILD_TOOLS/apksigner" sign --ks debug.keystore --ks-pass pass:android \
               --ks-key-alias androiddebugkey "$APK"
             "$BUILD_TOOLS/apksigner" verify "$APK"
-            echo "APK signed successfully: $APK"
+            # Rename to remove -unsigned suffix
+            SIGNED="${APK/-unsigned/}"
+            if [ "$APK" != "$SIGNED" ]; then
+              mv "$APK" "$SIGNED"
+              echo "APK renamed to: $SIGNED"
+            fi
+            echo "APK signed successfully: $SIGNED"
           else
             echo "No APK found to sign"
             exit 1

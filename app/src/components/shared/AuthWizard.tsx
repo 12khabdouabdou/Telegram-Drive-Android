@@ -27,6 +27,23 @@ function AuthThemeToggle() {
 }
 export function AuthWizard({ onLogin }: { onLogin: () => void }) {
     const isBrowser = typeof window !== 'undefined' && !('__TAURI_INTERNALS__' in window);
+    const [step, setStep] = useState<Step>("setup");
+    const [loading, setLoading] = useState(false);
+
+    const [apiId, setApiId] = useState("");
+    const [apiHash, setApiHash] = useState("");
+
+    const [phone, setPhone] = useState("");
+    const [code, setCode] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [floodWait, setFloodWait] = useState<number | null>(null);
+    const [showHelp, setShowHelp] = useState(false);
+    const [showDonate, setShowDonate] = useState(false);
+    const [loginMethod, setLoginMethod] = useState<'phone' | 'qr'>('phone');
+    const [qrUrl, setQrUrl] = useState<string | null>(null);
+    const [qrPolling, setQrPolling] = useState(false);
+    const qrPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     if (isBrowser) {
         return (
@@ -45,24 +62,6 @@ export function AuthWizard({ onLogin }: { onLogin: () => void }) {
             </div>
         )
     }
-
-    const [step, setStep] = useState<Step>("setup");
-    const [loading, setLoading] = useState(false);
-
-    const [apiId, setApiId] = useState("");
-    const [apiHash, setApiHash] = useState("");
-
-    const [phone, setPhone] = useState("");
-    const [code, setCode] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
-    const [floodWait, setFloodWait] = useState<number | null>(null);
-    const [showHelp, setShowHelp] = useState(false);
-    const [showDonate, setShowDonate] = useState(false);
-    const [loginMethod, setLoginMethod] = useState<'phone' | 'qr'>('phone');
-    const [qrUrl, setQrUrl] = useState<string | null>(null);
-    const [qrPolling, setQrPolling] = useState(false);
-    const qrPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
 
     useEffect(() => {

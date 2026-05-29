@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DownloadCloud, Trash2, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
+import { CloudDownload, Trash2, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
 import { TelegramFile } from '../../types';
 
 interface TouchFileListProps {
@@ -95,18 +95,18 @@ export function TouchFileList({
                   const timeoutId = setTimeout(() => {
                     handleLongPress(e as any, file);
                   }, 500);
-                  (e.target as HTMLElement).dataset['timeoutId'] = String(timeoutId);
+                  e.currentTarget.dataset['timeoutId'] = String(timeoutId);
                 }}
                 onTouchEnd={(e) => {
-                  const timeoutId = (e.target as HTMLElement).dataset['timeoutId'];
+                  const timeoutId = e.currentTarget.dataset['timeoutId'];
                   if (timeoutId) {
-                    clearTimeout(parseInt(timeoutId));
+clearTimeout(parseInt(timeoutId, 10));
                   }
                 }}
                 onTouchMove={(e) => {
-                  const timeoutId = (e.target as HTMLElement).dataset['timeoutId'];
+                  const timeoutId = e.currentTarget.dataset['timeoutId'];
                   if (timeoutId) {
-                    clearTimeout(parseInt(timeoutId));
+                    clearTimeout(parseInt(timeoutId, 10));
                   }
                 }}
               >
@@ -159,7 +159,7 @@ export function TouchFileList({
                         }}
                         className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-telegram-primary/15 text-telegram-primary text-xs font-semibold active:scale-95 transition-all"
                       >
-                        <DownloadCloud className="w-3.5 h-3.5" />
+                        <CloudDownload className="w-3.5 h-3.5" />
                         Save
                       </button>
                       {onShare && (
@@ -241,7 +241,7 @@ export function TouchFileList({
                   }}
                   className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-telegram-primary/10 hover:bg-telegram-primary/20 transition-all"
                 >
-                  <DownloadCloud className="w-6 h-6 text-telegram-primary" />
+                  <CloudDownload className="w-6 h-6 text-telegram-primary" />
                   <span className="text-[10px] font-medium">Download</span>
                 </button>
                 {onShare && (
@@ -297,11 +297,11 @@ export function TouchFileList({
                 const timeoutId = setTimeout(() => {
                   handleLongPress(e as any, file);
                 }, 500);
-                (e.target as HTMLElement).dataset['timeoutId'] = String(timeoutId);
+                e.currentTarget.dataset['timeoutId'] = String(timeoutId);
               }}
               onTouchEnd={(e) => {
-                const timeoutId = (e.target as HTMLElement).dataset['timeoutId'];
-                if (timeoutId) clearTimeout(parseInt(timeoutId));
+                const timeoutId = e.currentTarget.dataset['timeoutId'];
+                if (timeoutId) clearTimeout(parseInt(timeoutId, 10));
               }}
             >
               {isSelected ? (
@@ -352,7 +352,7 @@ export function TouchFileList({
                   }}
                   className="p-2.5 rounded-xl bg-telegram-primary/10 text-telegram-primary active:scale-90 transition-all"
                 >
-                  <DownloadCloud className="w-4 h-4" />
+                  <CloudDownload className="w-4 h-4" />
                 </button>
                 {onShare && (
                   <button
@@ -421,7 +421,7 @@ export function TouchFileList({
                 }}
                 className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-telegram-primary/10 hover:bg-telegram-primary/20"
               >
-                <DownloadCloud className="w-6 h-6 text-telegram-primary" />
+                <CloudDownload className="w-6 h-6 text-telegram-primary" />
                 <span className="text-[10px] font-medium">Download</span>
               </button>
               {onShare && (

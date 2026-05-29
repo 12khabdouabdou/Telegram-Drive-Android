@@ -5,7 +5,7 @@ import { QueueItem } from '../types';
 
 export function useFileUpload(store: any) {
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
-  const [isDragging, _setIsDragging] = useState(false);
+  const isDragging = false;
 
   // Manual file upload
   const handleManualUpload = useCallback(async () => {

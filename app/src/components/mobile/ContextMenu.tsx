@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
-  Download, Trash2, FolderInput, Share2, Edit3, Copy, 
-  ExternalLink, X, FileText, Image, Music, Film, File 
+  Download, Trash2, Folder, Share2, Pen, Copy, 
+  ExternalLink, X, FileText, Image, Music, Clapperboard, File 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TelegramFile } from '../../types';
@@ -21,12 +21,9 @@ interface ContextMenuProps {
 
 function getFileIcon(file: TelegramFile) {
   if (file.type === 'folder') {
-    return FolderInput;
-  }
-  const name = file.name.toLowerCase();
-  if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name)) return Image;
-  if (/\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(name)) return Music;
-  if (/\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(name)) return Film;
+    return Folder;
+
+  if (/\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(name)) return Clapperboard;
   if (/\.(pdf|doc|docx|txt|rtf|ppt|pptx|xls|xlsx)$/i.test(name)) return FileText;
   return File;
 }
@@ -85,19 +82,9 @@ export function ContextMenu({
       color: 'text-telegram-primary'
     },
     {
-      icon: FolderInput,
-      label: 'Move to Folder',
-      action: onMove,
-      color: 'text-telegram-text'
-    },
-    {
-      icon: Copy,
-      label: copied ? 'Copied!' : 'Copy Link',
-      action: handleCopyLink,
-      color: copied ? 'text-green-400' : 'text-telegram-text'
-    },
-    {
-      icon: Edit3,
+      icon: Folder,
+
+      icon: Pen,
       label: 'Rename',
       action: () => {
         toast.info('Rename feature coming soon');
