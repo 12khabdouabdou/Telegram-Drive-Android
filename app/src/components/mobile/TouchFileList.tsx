@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CloudDownload, Trash2, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
 import { TelegramFile } from '../../types';
 import { invoke } from '@tauri-apps/api/core';
@@ -48,14 +48,17 @@ export function TouchFileList({
 }: TouchFileListProps) {
   const [contextMenuFile, setContextMenuFile] = useState<TelegramFile | null>(null);
   const [thumbnails, setThumbnails] = useState<Record<number, string>>({});
+  const requestedThumbnails = useRef<Set<number>>(new Set());
 
   // Fetch thumbnails for image files
   useEffect(() => {
     const imageFiles = files.filter(f =>
-      /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name) && !thumbnails[f.id]
+      /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name) && !thumbnails[f.id] && !requestedThumbnails.current.has(f.id)
     );
     if (imageFiles.length === 0) return;
+    
     for (const file of imageFiles) {
+      requestedThumbnails.current.add(file.id);
       invoke<string>('cmd_get_thumbnail', { messageId: file.id, folderId: file.folder_id ?? null })
         .then(dataUrl => {
           if (dataUrl) {
@@ -66,7 +69,7 @@ export function TouchFileList({
           console.warn(`Thumbnail failed for ${file.name} (id=${file.id}):`, err);
         });
     }
-  }, [files, thumbnails]);
+  }, [files]); // Remove thumbnails from dependencies to prevent infinite loop
 
   const handleLongPress = (e: React.TouchEvent | React.MouseEvent, file: TelegramFile) => {
     e.preventDefault();
@@ -325,6 +328,10 @@ clearTimeout(parseInt(timeoutId, 10));
                 e.currentTarget.dataset['timeoutId'] = String(timeoutId);
               }}
               onTouchEnd={(e) => {
+                const timeoutId = e.currentTarget.dataset['timeoutId'];
+                if (timeoutId) clearTimeout(parseInt(timeoutId, 10));
+              }}
+              onTouchMove={(e) => {
                 const timeoutId = e.currentTarget.dataset['timeoutId'];
                 if (timeoutId) clearTimeout(parseInt(timeoutId, 10));
               }}

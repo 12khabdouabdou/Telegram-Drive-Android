@@ -1,4 +1,4 @@
-use tauri::{State, Emitter};
+use tauri::{State, Emitter, Manager};
 use grammers_client::types::{Media, Peer};
 use grammers_client::InputMessage;
 use grammers_tl_types as tl;

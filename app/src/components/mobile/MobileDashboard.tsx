@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
+import { cacheDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
@@ -137,7 +138,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (selectedIds.length === 0) return;
     try {
       for (const id of selectedIds) {
-        await invoke('cmd_delete_file', { messageId: id });
+        await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId ?? null });
       }
       toast.success(`Deleted ${selectedIds.length} files`);
       queryClient.invalidateQueries({ queryKey: ['files'] });
@@ -145,7 +146,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     } catch (err) {
       toast.error(`Bulk delete failed: ${err}`);
     }
-  }, [selectedIds, queryClient, setSelectedIds]);
+  }, [selectedIds, queryClient, setSelectedIds, activeFolderId]);
 
   const handleUpload = useCallback(async () => {
     fileInputRef.current?.click();
