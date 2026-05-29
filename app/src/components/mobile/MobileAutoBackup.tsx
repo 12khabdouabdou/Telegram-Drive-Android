@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { X, CloudUpload, Play, Folder, Phone } from 'lucide-react';
+import { X, CloudUpload, Play, Folder, Phone, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MobileAutoBackupProps {
@@ -25,6 +25,7 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
   ];
   
   const [customFolders, setCustomFolders] = useState<string[]>(standardFolders);
+  const [newFolderInput, setNewFolderInput] = useState('');
 
   useEffect(() => {
     // Check initial status
@@ -108,10 +109,43 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
             </div>
             
             {backupMode === 'custom' && (
-              <div className="p-3 bg-telegram-bg/50 rounded-xl text-xs text-telegram-subtext space-y-2">
-                <p>Selected paths:</p>
-                <ul className="list-disc pl-4 space-y-1">
-                  {customFolders.map(f => <li key={f} className="truncate">{f}</li>)}
+              <div className="p-3 bg-telegram-bg/50 rounded-xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newFolderInput}
+                    onChange={(e) => setNewFolderInput(e.target.value)}
+                    placeholder="e.g. /storage/emulated/0/DCIM"
+                    className="flex-1 bg-telegram-hover/30 border border-telegram-border/50 rounded-lg px-3 py-2 text-xs text-telegram-text focus:outline-none focus:border-telegram-primary/50 transition-colors"
+                  />
+                  <button
+                    onClick={() => {
+                      if (newFolderInput && !customFolders.includes(newFolderInput)) {
+                        setCustomFolders(prev => [...prev, newFolderInput]);
+                        setNewFolderInput('');
+                      }
+                    }}
+                    disabled={!newFolderInput}
+                    className="p-2 bg-telegram-primary text-black rounded-lg disabled:opacity-50 active:scale-95 transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <ul className="space-y-1.5">
+                  {customFolders.length === 0 && (
+                    <p className="text-xs text-telegram-subtext/70 italic py-1">No custom folders added.</p>
+                  )}
+                  {customFolders.map(f => (
+                    <li key={f} className="flex items-center justify-between bg-telegram-hover/20 px-3 py-2 rounded-lg border border-telegram-border/30">
+                      <span className="text-xs text-telegram-text truncate flex-1 mr-2" title={f}>{f}</span>
+                      <button
+                        onClick={() => setCustomFolders(prev => prev.filter(folder => folder !== f))}
+                        className="text-red-400 hover:text-red-300 p-1 active:scale-95 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
