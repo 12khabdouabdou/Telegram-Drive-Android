@@ -18,6 +18,7 @@ const MobileShareDialog = lazy(() => import('./MobileShareDialog').then(m => ({ 
 const MobileImageGallery = lazy(() => import('./MobileImageGallery').then(m => ({ default: m.MobileImageGallery })));
 const MobileNetworkSettings = lazy(() => import('./MobileNetworkSettings').then(m => ({ default: m.MobileNetworkSettings })));
 const MobileShareDashboard = lazy(() => import('./MobileShareDashboard').then(m => ({ default: m.MobileShareDashboard })));
+const MobileAutoBackup = lazy(() => import('./MobileAutoBackup').then(m => ({ default: m.MobileAutoBackup })));
 
 export default function MobileDashboard({ onLogout }: { onLogout?: () => void }) {
   const queryClient = useQueryClient();
@@ -43,6 +44,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const [previewGallery, setPreviewGallery] = useState<{ files: TelegramFile[]; index: number } | null>(null);
   const [showNetworkSettings, setShowNetworkSettings] = useState(false);
   const [showShareDashboard, setShowShareDashboard] = useState(false);
+  const [showAutoBackup, setShowAutoBackup] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -765,6 +767,19 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
 
             {/* Sharing */}
             <div className="p-4 rounded-2xl bg-telegram-hover/20 border border-telegram-border/30 space-y-4">
+            {/* Auto-Backup */}
+            <div className="p-4 rounded-2xl bg-telegram-hover/20 border border-telegram-border/30 space-y-4">
+              <h3 className="text-xs font-bold text-telegram-primary tracking-wide uppercase">Auto-Backup</h3>
+              <button
+                onClick={() => setShowAutoBackup(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/20 font-semibold text-sm active:scale-95 transition-all"
+              >
+                <CloudDownload className="w-4 h-4" />
+                Configure Auto-Backup
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-telegram-hover/20 border border-telegram-border/30 space-y-4">
               <h3 className="text-xs font-bold text-telegram-primary tracking-wide uppercase">Sharing</h3>
               <button
                 onClick={() => setShowShareDashboard(true)}
@@ -831,6 +846,15 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       </Suspense>
 
       <Suspense fallback={null}>
+      <Suspense fallback={null}>
+        {showAutoBackup && (
+          <MobileAutoBackup
+            onClose={() => setShowAutoBackup(false)}
+            folders={folders}
+          />
+        )}
+      </Suspense>
+
         {showMoveToFolder && (
           <MoveToFolderModal
             selectedFileIds={selectedIds}

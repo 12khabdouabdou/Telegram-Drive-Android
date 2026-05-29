@@ -261,6 +261,8 @@ pub fn run() {
             commands::cmd_list_shares,
             commands::cmd_revoke_share,
             commands::cmd_write_temp_file,
+            commands::cmd_start_backup,
+            commands::cmd_get_backup_status,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

@@ -50,3 +50,5 @@ pub use api_settings::*;
 pub use settings::*;
 pub use sharing::*;
 
+pub mod backup;
+pub use backup::*;
