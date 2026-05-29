@@ -67,6 +67,7 @@ export function TouchFileList({
         })
         .catch((err) => {
           console.warn(`Thumbnail failed for ${file.name} (id=${file.id}):`, err);
+          requestedThumbnails.current.delete(file.id);
         });
     }
   }, [files]); // Remove thumbnails from dependencies to prevent infinite loop

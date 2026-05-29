@@ -205,6 +205,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
           item.id === uploadId ? { ...item, status: 'success', progress: 100 } : item
         ));
         toast.success(`Uploaded: ${file.name}`);
+        queryClient.invalidateQueries({ queryKey: ['files'] });
       } catch (err) {
         setUploadQueue(prev => prev.map(item =>
           item.id === uploadId ? { ...item, status: 'error', error: String(err) } : item
@@ -215,7 +216,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
 
     // Reset file input so the same file can be re-picked
     e.target.value = '';
-  }, [activeFolderId]);
+  }, [activeFolderId, queryClient]);
 
   const handleDownload = useCallback(async (file: TelegramFile) => {
     try {
@@ -591,6 +592,16 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                       setSelectedIds(selectedIds.filter(id => id !== fileId));
                     } else {
                       setSelectedIds([...selectedIds, fileId]);
+                    }
+                  } else {
+                    const file = sortedFiles.find(f => f.id === fileId);
+                    if (file) {
+                      if (file.type === 'folder') {
+                        setActiveFolderId(file.id);
+                        setSearchTerm('');
+                      } else {
+                        handlePreview(file, sortedFiles);
+                      }
                     }
                   }
                 }}
