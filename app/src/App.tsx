@@ -26,7 +26,7 @@ function AppContent() {
   const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const { theme } = useTheme();
   const { available, version, downloading, progress, downloadAndInstall, dismissUpdate } = useUpdateCheck();
-  const { isMobile } = usePlatform();
+  const { isMobile, isAndroid } = usePlatform();
 
   // On mount: check for a saved session and auto-restore it.
   // This is the SINGLE source of truth for the initial connection.
@@ -94,7 +94,8 @@ function AppContent() {
   }
 
   return (
-    <main className="h-screen w-screen text-telegram-text overflow-hidden selection:bg-telegram-primary/30 relative">
+    <main className="h-screen w-screen text-telegram-text overflow-hidden selection:bg-telegram-primary/30 relative"
+          style={isAndroid ? { paddingTop: 'env(safe-area-inset-top, 0px)' } : undefined}>
       <UpdateBanner
         available={available}
         version={version}

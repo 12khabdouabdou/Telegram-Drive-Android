@@ -843,3 +843,20 @@ pub async fn cmd_delete_temp_zip(
     .await
     .map_err(|e| format!("Task panicked: {}", e))?
 }
+
+#[tauri::command]
+pub async fn cmd_write_temp_file(
+    file_name: String,
+    file_data: Vec<u8>,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    let cache_dir = app_handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("Failed to resolve cache dir: {}", e))?;
+    let file_path = cache_dir.join(&file_name);
+    tokio::fs::write(&file_path, &file_data)
+        .await
+        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    Ok(file_path.to_string_lossy().to_string())
+}
