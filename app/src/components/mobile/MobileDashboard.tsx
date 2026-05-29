@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
-import { writeFile } from '@tauri-apps/plugin-fs';
+import { BaseDirectory, writeFile } from '@tauri-apps/plugin-fs';
 import { cacheDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
@@ -176,7 +176,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       const tempPath = await join(dir, file.name);
       console.log(`Writing ${file.name} (${bytes.byteLength} bytes) to ${tempPath}`);
       try {
-        await writeFile(tempPath, new Uint8Array(bytes));
+        await writeFile(file.name, new Uint8Array(bytes), { baseDir: BaseDirectory.Cache });
       } catch (err) {
         console.error('Failed to write temp file:', tempPath, err);
         toast.error(`Failed to write temp file: ${file.name}`);
