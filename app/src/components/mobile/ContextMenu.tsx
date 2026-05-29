@@ -22,7 +22,8 @@ interface ContextMenuProps {
 function getFileIcon(file: TelegramFile) {
   if (file.type === 'folder') {
     return Folder;
-
+  }
+  const name = file.name;
   if (/\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(name)) return Clapperboard;
   if (/\.(pdf|doc|docx|txt|rtf|ppt|pptx|xls|xlsx)$/i.test(name)) return FileText;
   return File;
@@ -82,8 +83,6 @@ export function ContextMenu({
       color: 'text-telegram-primary'
     },
     {
-      icon: Folder,
-
       icon: Pen,
       label: 'Rename',
       action: () => {
