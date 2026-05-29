@@ -110,6 +110,21 @@ jobs:
         working-directory: app
         run: npx tauri android init
 
+      - name: Verify Android permissions
+        if: matrix.is_android
+        run: |
+          MANIFEST=app/src-tauri/gen/android/app/src/main/AndroidManifest.xml
+          if [ -f "$MANIFEST" ]; then
+            echo "Checking permissions in: $MANIFEST"
+            grep -E "uses-permission|INTERNET|ACCESS_NETWORK" "$MANIFEST" || echo "WARNING: INTERNET permission not found!"
+            if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
+              echo "Adding INTERNET permission..."
+              sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
+            fi
+          else
+            echo "Manifest not found at $MANIFEST (may be generated later during build)"
+          fi
+
       - name: install frontend dependencies
         working-directory: app
         run: npm install

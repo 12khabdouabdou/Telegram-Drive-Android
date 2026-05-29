@@ -7,7 +7,7 @@ use grammers_mtsender::SenderPool;
 use grammers_session::storages::SqliteSession;
 use grammers_session::Session;
 use tokio::sync::oneshot;
-use tokio::time::Duration;
+use tokio::time::{Duration, timeout};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use grammers_tl_types as tl;
 
@@ -162,10 +162,11 @@ pub async fn cmd_connect(
     state: State<'_, TelegramState>,
     api_id: i32,
 ) -> Result<bool, String> {
-    // Store API ID for auto-reconnect
     *state.api_id.lock().await = Some(api_id);
-    ensure_client_initialized(&app_handle, &state, api_id).await?;
-    Ok(true)
+    timeout(Duration::from_secs(15), ensure_client_initialized(&app_handle, &state, api_id))
+        .await
+        .map_err(|_| "Connection timed out after 15 seconds. Check your network and try again.".to_string())?
+        .map(|_| true)
 }
 
 #[tauri::command]
@@ -270,38 +271,44 @@ pub async fn cmd_auth_request_code(
     // Store API ID
     *state.api_id.lock().await = Some(api_id);
 
-    let client_handle = ensure_client_initialized(&app_handle, &state, api_id).await?;
+    let client_handle = timeout(Duration::from_secs(15), ensure_client_initialized(&app_handle, &state, api_id))
+        .await
+        .map_err(|_| "Client initialization timed out. Check your network.".to_string())?
+        .map_err(|e| e)?;
     
     log::info!("Requesting code for {}", phone);
     
-    let mut last_error = String::new();
-    
-    // Retry up to 2 times for AUTH_RESTART or 500
-    for i in 1..=2 {
-        match client_handle.request_login_code(&phone, &api_hash).await {
-            Ok(token) => {
-                let mut token_guard = state.login_token.lock().await;
-                *token_guard = Some(token);
-                return Ok("code_sent".to_string());
-            },
-            Err(e) => {
-                let err_msg = e.to_string();
-                log::warn!("Error requesting code (Attempt {}): {}", i, err_msg);
-                
-                if err_msg.contains("AUTH_RESTART") || err_msg.contains("500") {
-                    log::info!("AUTH_RESTART error detected. Retrying...");
-                    last_error = err_msg;
-                    // Prepare for retry
-                    continue;
+    timeout(Duration::from_secs(30), async {
+        let mut last_error = String::new();
+        
+        // Retry up to 2 times for AUTH_RESTART or 500
+        for i in 1..=2 {
+            match client_handle.request_login_code(&phone, &api_hash).await {
+                Ok(token) => {
+                    let mut token_guard = state.login_token.lock().await;
+                    *token_guard = Some(token);
+                    return Ok("code_sent".to_string());
+                },
+                Err(e) => {
+                    let err_msg = e.to_string();
+                    log::warn!("Error requesting code (Attempt {}): {}", i, err_msg);
+                    
+                    if err_msg.contains("AUTH_RESTART") || err_msg.contains("500") {
+                        log::info!("AUTH_RESTART error detected. Retrying...");
+                        last_error = err_msg;
+                        continue;
+                    }
+                    
+                    // Other errors, fail immediately
+                    return Err(map_error(e));
                 }
-                
-                // Other errors, fail immediately
-                return Err(map_error(e));
             }
         }
-    }
 
-    Err(format!("Telegram Error after retry: {}", last_error))
+        Err(format!("Telegram Error after retry: {}", last_error))
+    })
+    .await
+    .map_err(|_| "Connection to Telegram timed out after 30 seconds. The server may be blocked or unreachable. Check your network or try configuring a proxy in Settings.".to_string())?
 }
 
 #[tauri::command]
