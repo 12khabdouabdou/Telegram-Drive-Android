@@ -463,13 +463,34 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
           <div className="space-y-4 animate-fade-in">
             {/* Folder Header */}
             {selectedIds.length === 0 && (
-              <div className="flex items-center justify-between bg-telegram-hover/20 p-3 rounded-2xl border border-telegram-border/30">
-                <div className="flex items-center gap-2.5">
-                  <Folder className="w-5 h-5 text-telegram-primary" />
-                  <span className="text-sm font-semibold">{activeFolder?.name || 'Saved Messages'}</span>
+              <div className="flex flex-col gap-3 bg-telegram-hover/20 p-3 rounded-2xl border border-telegram-border/30">
+                {/* Row 1: Folder Name & Global Actions */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Folder className="w-5 h-5 text-telegram-primary shrink-0" />
+                    <span className="text-sm font-semibold truncate">{activeFolder?.name || 'Saved Messages'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all"
+                    >
+                      {viewMode === 'grid' ? <List className="w-3.5 h-3.5" /> : <Grid className="w-3.5 h-3.5" />}
+                      {viewMode === 'grid' ? 'List' : 'Grid'}
+                    </button>
+                    <button
+                      onClick={scanFolders}
+                      disabled={isSyncing}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                      Sync
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  {/* Sort buttons */}
+
+                {/* Row 2: Sort Controls & Folder Actions */}
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-telegram-bg/50">
                     {(['name', 'size', 'date'] as const).map(field => (
                       <button
@@ -488,40 +509,27 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                       </button>
                     ))}
                   </div>
-                  {/* Download folder */}
-                  <button
-                    onClick={handleDownloadFolder}
-                    disabled={displayedFiles.length === 0}
-                    className="p-1.5 rounded-xl text-xs bg-telegram-primary/10 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all disabled:opacity-40"
-                    title="Download all files"
-                  >
-                    <CloudDownload className="w-3.5 h-3.5" />
-                  </button>
-                  {/* Delete folder */}
-                  {activeFolderId && (
+                  <div className="flex items-center gap-1.5">
+                    {/* Download folder */}
                     <button
-                      onClick={() => handleDeleteFolder(activeFolderId)}
-                      className="p-1.5 rounded-xl text-xs bg-red-500/10 text-red-400 border border-red-500/10 active:scale-95 transition-all"
-                      title="Delete folder"
+                      onClick={handleDownloadFolder}
+                      disabled={displayedFiles.length === 0}
+                      className="p-1.5 rounded-xl text-xs bg-telegram-primary/10 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all disabled:opacity-40"
+                      title="Download all files"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <CloudDownload className="w-3.5 h-3.5" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all"
-                  >
-                    {viewMode === 'grid' ? <List className="w-3.5 h-3.5" /> : <Grid className="w-3.5 h-3.5" />}
-                    {viewMode === 'grid' ? 'List' : 'Grid'}
-                  </button>
-                  <button
-                    onClick={scanFolders}
-                    disabled={isSyncing}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                    Sync
-                  </button>
+                    {/* Delete folder */}
+                    {activeFolderId && (
+                      <button
+                        onClick={() => handleDeleteFolder(activeFolderId)}
+                        className="p-1.5 rounded-xl text-xs bg-red-500/10 text-red-400 border border-red-500/10 active:scale-95 transition-all"
+                        title="Delete folder"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
