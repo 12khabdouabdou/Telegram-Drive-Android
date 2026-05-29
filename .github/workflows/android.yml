@@ -102,7 +102,7 @@ jobs:
         working-directory: app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx tauri android build --apk --ci
+        run: npx tauri android build --apk true --ci
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
