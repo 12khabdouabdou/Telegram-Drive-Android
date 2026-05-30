@@ -56,7 +56,7 @@ export function useFileDownload(store: any) {
     try {
       const item = downloadQueue.find(i => i.id === itemId);
       if (item) {
-        await invoke('cmd_cancel_transfer', { transferId: item.messageId.toString() });
+        await invoke('cmd_cancel_transfer', { transferId: item.id });
         setDownloadQueue(prev => prev.filter(i => i.id !== itemId));
         toast.success('Download cancelled');
       }
@@ -70,7 +70,7 @@ export function useFileDownload(store: any) {
     try {
       for (const item of downloadQueue) {
         if (item.status === 'downloading' || item.status === 'pending') {
-          await invoke('cmd_cancel_transfer', { transferId: item.messageId.toString() });
+          await invoke('cmd_cancel_transfer', { transferId: item.id });
         }
       }
       setDownloadQueue([]);

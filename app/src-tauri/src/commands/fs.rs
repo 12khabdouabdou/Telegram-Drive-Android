@@ -651,8 +651,15 @@ pub async fn cmd_search_global(
         users_only: false,
     }).await.map_err(map_error)?;
 
-    if let tl::enums::messages::Messages::Messages(msgs) = result {
-        for msg in msgs.messages {
+    let messages = match result {
+        tl::enums::messages::Messages::Messages(m) => m.messages,
+        tl::enums::messages::Messages::MessagesSlice(m) => m.messages,
+        tl::enums::messages::Messages::ChannelMessages(m) => m.messages,
+        tl::enums::messages::Messages::NotModified(_) => Vec::new(),
+    };
+
+    {
+        for msg in messages {
             if let tl::enums::Message::Message(m) = msg {
                 if let Some(tl::enums::MessageMedia::Document(d)) = m.media {
                     if let tl::enums::Document::Document(doc) = d.document.unwrap() {

@@ -40,7 +40,7 @@ pub async fn resolve_peer(
                 discovered.insert(id, dialog.peer.clone());
                 if id == fid {
                     found = Some(dialog.peer.clone());
-                    // Don't break — keep scanning to warm the cache
+                    break; // Fixed: Break early to avoid O(N) performance bottleneck
                 }
             }
         }

@@ -90,34 +90,27 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
 
   // Listen for progress events
   useEffect(() => {
-    let unlistenUpload: () => void;
-    let unlistenDownload: () => void;
+    const unlistenUploadPromise = listen('upload-progress', (event: any) => {
+      const payload = event.payload;
+      setUploadQueue(prev => prev.map(item => 
+        item.id === payload.id 
+          ? { ...item, progress: payload.percent, uploadedBytes: payload.uploaded_bytes, totalBytes: payload.total_bytes, speedBytesPerSec: payload.speed_bytes_per_sec } 
+          : item
+      ));
+    });
 
-    const setupListeners = async () => {
-      unlistenUpload = await listen('upload-progress', (event: any) => {
-        const payload = event.payload;
-        setUploadQueue(prev => prev.map(item => 
-          item.id === payload.id 
-            ? { ...item, progress: payload.percent, uploadedBytes: payload.uploaded_bytes, totalBytes: payload.total_bytes, speedBytesPerSec: payload.speed_bytes_per_sec } 
-            : item
-        ));
-      });
-
-      unlistenDownload = await listen('download-progress', (event: any) => {
-        const payload = event.payload;
-        setDownloadQueue(prev => prev.map(item => 
-          item.id === payload.id 
-            ? { ...item, progress: payload.percent, uploadedBytes: payload.uploaded_bytes, totalBytes: payload.total_bytes, speedBytesPerSec: payload.speed_bytes_per_sec } 
-            : item
-        ));
-      });
-    };
-
-    setupListeners();
+    const unlistenDownloadPromise = listen('download-progress', (event: any) => {
+      const payload = event.payload;
+      setDownloadQueue(prev => prev.map(item => 
+        item.id === payload.id 
+          ? { ...item, progress: payload.percent, uploadedBytes: payload.uploaded_bytes, totalBytes: payload.total_bytes, speedBytesPerSec: payload.speed_bytes_per_sec } 
+          : item
+      ));
+    });
 
     return () => {
-      if (unlistenUpload) unlistenUpload();
-      if (unlistenDownload) unlistenDownload();
+      unlistenUploadPromise.then(f => f());
+      unlistenDownloadPromise.then(f => f());
     };
   }, []);
 
@@ -918,6 +911,21 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                         {item.status === 'uploading' && (
                           <div className="w-5 h-5 border-2 border-telegram-primary border-t-transparent rounded-full animate-spin" />
                         )}
+                        {(item.status === 'uploading' || item.status === 'pending') && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await invoke('cmd_cancel_transfer', { transferId: item.id });
+                              } catch (e) {
+                                // ignore
+                              }
+                              setUploadQueue(prev => prev.filter(i => i.id !== item.id));
+                            }}
+                            className="p-1.5 rounded-xl bg-red-500/10 text-red-400 active:scale-95 transition-all"
+                          >
+                            <span className="text-sm">✕</span>
+                          </button>
+                        )}
                       </div>
                       {item.progress !== undefined && (
                         <div className="relative h-2 bg-telegram-bg/50 rounded-full overflow-hidden">
@@ -963,7 +971,14 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                         </div>
                       </div>
                       <button
-                        onClick={() => setDownloadQueue(prev => prev.filter(i => i.id !== item.id))}
+                        onClick={async () => {
+                          try {
+                            await invoke('cmd_cancel_transfer', { transferId: item.id });
+                          } catch (e) {
+                            // ignore
+                          }
+                          setDownloadQueue(prev => prev.filter(i => i.id !== item.id));
+                        }}
                         className="p-2 rounded-xl bg-telegram-hover/50 text-telegram-subtext active:scale-95 transition-all"
                       >
                         <span className="text-lg">✕</span>
