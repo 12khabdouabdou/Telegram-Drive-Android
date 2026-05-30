@@ -377,6 +377,28 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     }
   }, [activeFolderId, displayedFiles]);
 
+  const toggleSort = useCallback((field: 'name' | 'size' | 'date') => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  }, [sortBy]);
+
+  const sortedFiles = useMemo(() => {
+    const files = searchTerm.length > 2 && globalResults.length > 0
+      ? globalResults
+      : [...displayedFiles];
+    files.sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortBy === 'size') cmp = (a.size || 0) - (b.size || 0);
+      else if (sortBy === 'date') cmp = (a.created_at || '').localeCompare(b.created_at || '');
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+    return files;
+  }, [displayedFiles, globalResults, searchTerm, sortBy, sortOrder]);
   const handleBulkDownload = useCallback(async () => {
     if (selectedIds.length === 0) return;
     toast.info(`Starting download of ${selectedIds.length} files...`);
@@ -531,28 +553,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     pullStartY.current = 0;
   }, [isPulling, refetch]);
 
-  const toggleSort = useCallback((field: 'name' | 'size' | 'date') => {
-    if (sortBy === field) {
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-  }, [sortBy]);
-
-  const sortedFiles = useMemo(() => {
-    const files = searchTerm.length > 2 && globalResults.length > 0
-      ? globalResults
-      : [...displayedFiles];
-    files.sort((a, b) => {
-      let cmp = 0;
-      if (sortBy === 'name') cmp = a.name.localeCompare(b.name);
-      else if (sortBy === 'size') cmp = (a.size || 0) - (b.size || 0);
-      else if (sortBy === 'date') cmp = (a.created_at || '').localeCompare(b.created_at || '');
-      return sortOrder === 'asc' ? cmp : -cmp;
-    });
-    return files;
-  }, [displayedFiles, globalResults, searchTerm, sortBy, sortOrder]);
 
   // Global search effect
   useEffect(() => {
