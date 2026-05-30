@@ -658,55 +658,27 @@ pub async fn cmd_search_global(
         tl::enums::messages::Messages::NotModified(_) => Vec::new(),
     };
 
-    {
-        for msg in messages {
-            if let tl::enums::Message::Message(m) = msg {
-                if let Some(tl::enums::MessageMedia::Document(d)) = m.media {
-                    if let tl::enums::Document::Document(doc) = d.document.unwrap() {
-                        let name = doc.attributes.iter().find_map(|a| match a {
-                            tl::enums::DocumentAttribute::Filename(f) => Some(f.file_name.clone()),
-                            _ => None
-                        }).unwrap_or("Unknown".to_string());
-                        let size = doc.size as u64;
-                        let mime = doc.mime_type.clone();
-                        let ext = std::path::Path::new(&name).extension().map(|os| os.to_str().unwrap_or("").to_string());
-                        let folder_id = match m.peer_id {
-                            tl::enums::Peer::Channel(c) => Some(c.channel_id),
-                            tl::enums::Peer::User(u) => Some(u.user_id),
-                            tl::enums::Peer::Chat(c) => Some(c.chat_id),
-                        };
-                        files.push(FileMetadata {
-                            id: m.id as i64, folder_id, name, size,
-                            mime_type: Some(mime), file_ext: ext,
-                            created_at: m.date.to_string(), icon_type: "file".into()
-                        });
-                    }
-                }
-            }
-        }
-    } else if let tl::enums::messages::Messages::Slice(msgs) = result {
-        for msg in msgs.messages {
-            if let tl::enums::Message::Message(m) = msg {
-                if let Some(tl::enums::MessageMedia::Document(d)) = m.media {
-                    if let tl::enums::Document::Document(doc) = d.document.unwrap() {
-                        let name = doc.attributes.iter().find_map(|a| match a {
-                            tl::enums::DocumentAttribute::Filename(f) => Some(f.file_name.clone()),
-                            _ => None
-                        }).unwrap_or("Unknown".to_string());
-                        let size = doc.size as u64;
-                        let mime = doc.mime_type.clone();
-                        let ext = std::path::Path::new(&name).extension().map(|os| os.to_str().unwrap_or("").to_string());
-                        let folder_id = match m.peer_id {
-                            tl::enums::Peer::Channel(c) => Some(c.channel_id),
-                            tl::enums::Peer::User(u) => Some(u.user_id),
-                            tl::enums::Peer::Chat(c) => Some(c.chat_id),
-                        };
-                        files.push(FileMetadata {
-                            id: m.id as i64, folder_id, name, size,
-                            mime_type: Some(mime), file_ext: ext,
-                            created_at: m.date.to_string(), icon_type: "file".into()
-                        });
-                    }
+    for msg in messages {
+        if let tl::enums::Message::Message(m) = msg {
+            if let Some(tl::enums::MessageMedia::Document(d)) = m.media {
+                if let tl::enums::Document::Document(doc) = d.document.unwrap() {
+                    let name = doc.attributes.iter().find_map(|a| match a {
+                        tl::enums::DocumentAttribute::Filename(f) => Some(f.file_name.clone()),
+                        _ => None
+                    }).unwrap_or("Unknown".to_string());
+                    let size = doc.size as u64;
+                    let mime = doc.mime_type.clone();
+                    let ext = std::path::Path::new(&name).extension().map(|os| os.to_str().unwrap_or("").to_string());
+                    let folder_id = match m.peer_id {
+                        tl::enums::Peer::Channel(c) => Some(c.channel_id),
+                        tl::enums::Peer::User(u) => Some(u.user_id),
+                        tl::enums::Peer::Chat(c) => Some(c.chat_id),
+                    };
+                    files.push(FileMetadata {
+                        id: m.id as i64, folder_id, name, size,
+                        mime_type: Some(mime), file_ext: ext,
+                        created_at: m.date.to_string(), icon_type: "file".into()
+                    });
                 }
             }
         }
