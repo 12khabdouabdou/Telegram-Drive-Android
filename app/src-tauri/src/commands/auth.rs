@@ -107,7 +107,7 @@ pub async fn ensure_client_initialized(
     }
 
     let mut connection_params = grammers_mtsender::ConnectionParams::default();
-    let proxy = net_config.proxy.read().unwrap();
+    let proxy = net_config.proxy.read().unwrap().clone();
     if proxy.enabled && !proxy.host.is_empty() {
         if proxy.proxy_type == "socks5" {
             let url = if !proxy.username.is_empty() {
