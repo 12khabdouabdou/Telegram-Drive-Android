@@ -78,20 +78,56 @@ pub async fn cmd_start_backup(
         if let Some(parent) = history_file.parent() {
             let _ = tokio::fs::create_dir_all(parent).await;
         }
-        for folder in &config.folders {
-            for entry in WalkDir::new(folder).into_iter().filter_map(|e| e.ok()) {
-                if entry.file_type().is_file() {
-                    let path_str = entry.path().to_string_lossy().to_string();
-                    if !history.contains(&path_str) {
-                        files_to_upload.push(path_str);
+        
+        let folders_clone = config.folders.clone();
+        let history_clone = history.clone();
+        
+        let files_to_upload_result = tokio::task::spawn_blocking(move || {
+            let mut pending = Vec::new();
+            for folder in &folders_clone {
+                for entry in WalkDir::new(folder).into_iter().filter_map(|e| e.ok()) {
+                    if entry.file_type().is_file() {
+                        if let Ok(metadata) = entry.metadata() {
+                            if metadata.len() < 1024 * 1024 * 500 { // pre-filter 500MB
+                                let path_str = entry.path().to_string_lossy().to_string();
+                                if !history_clone.contains(&path_str) {
+                                    pending.push(path_str);
+                                }
+                            }
+                        }
                     }
                 }
             }
+            pending
+        }).await;
+        
+        if let Ok(files) = files_to_upload_result {
+            files_to_upload = files;
         }
 
         let total = files_to_upload.len();
+        if total == 0 {
+            let _ = app_handle.notification()
+                .builder()
+                .title("Backup Failed or Empty")
+                .body("No new files found. Check your Android storage permissions (All Files Access) or folder paths.")
+                .show();
+
+            let _ = app_handle.emit("backup-progress", BackupProgress {
+                total: 0,
+                done: 0,
+                current_file: "Error: No files or Permission Denied".to_string(),
+                is_running: false,
+            });
+
+            *running_flag.lock().unwrap() = false;
+            stop_flag.store(false, Ordering::Relaxed);
+            return;
+        }
+
         let mut done = 0;
         let mut last_notified_percent = 0;
+        let mut last_history_save = tokio::time::Instant::now();
 
         let _ = app_handle.notification()
             .builder()
@@ -147,8 +183,11 @@ pub async fn cmd_start_backup(
                                 if let Ok(peer) = resolve_peer(&client, config.dest_folder_id, &state.peer_cache).await {
                                     if client.send_message(&peer, message).await.is_ok() {
                                         history.insert(path.clone());
-                                        if let Ok(json) = serde_json::to_string(&history) {
-                                            let _ = tokio::fs::write(&history_file, json).await;
+                                        if last_history_save.elapsed().as_secs() > 5 {
+                                            if let Ok(json) = serde_json::to_string(&history) {
+                                                let _ = tokio::fs::write(&history_file, json).await;
+                                                last_history_save = tokio::time::Instant::now();
+                                            }
                                         }
                                     }
                                 }
@@ -158,6 +197,11 @@ pub async fn cmd_start_backup(
                 }
             }
             done += 1;
+        }
+
+        // Final history save
+        if let Ok(json) = serde_json::to_string(&history) {
+            let _ = tokio::fs::write(&history_file, json).await;
         }
 
         let _ = app_handle.notification()
