@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { listen } from '@tauri-apps/api/event';
-import { X, CloudUpload, Play, Square, Folder, Phone, FolderSearch, Trash2 } from 'lucide-react';
+import { X, CloudUpload, Play, Square, Folder, Phone, FolderSearch, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MobileAutoBackupProps {
@@ -26,6 +26,7 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
   ];
   
   const [customFolders, setCustomFolders] = useState<string[]>(standardFolders);
+  const [newFolderInput, setNewFolderInput] = useState('');
   
   useEffect(() => {
     // Check initial status
@@ -120,6 +121,28 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
             {backupMode === 'custom' && (
               <div className="p-3 bg-telegram-bg/50 rounded-xl space-y-3">
                 <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 w-full">
+                  <div className="flex gap-2 w-full">
+                    <input
+                      type="text"
+                      value={newFolderInput}
+                      onChange={(e) => setNewFolderInput(e.target.value)}
+                      placeholder="/storage/emulated/0/DCIM"
+                      className="flex-1 bg-telegram-hover/30 border border-telegram-border/50 rounded-lg px-3 py-2 text-xs text-telegram-text focus:outline-none focus:border-telegram-primary/50"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newFolderInput && !customFolders.includes(newFolderInput)) {
+                          setCustomFolders(prev => [...prev, newFolderInput]);
+                          setNewFolderInput('');
+                        }
+                      }}
+                      disabled={!newFolderInput}
+                      className="p-2 bg-telegram-primary text-black rounded-lg disabled:opacity-50 active:scale-95"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                   <button
                     onClick={async () => {
                       try {
@@ -127,20 +150,25 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
                           directory: true,
                           multiple: false,
                         });
-                        if (selected && typeof selected === 'string' && !customFolders.includes(selected)) {
-                          setCustomFolders(prev => [...prev, selected]);
-                        } else if (selected && selected.startsWith && selected.startsWith('content://')) {
-                          toast.error("Android protected folders (content://) are not fully supported. Please try a different folder or grant All Files Access.");
+                        if (selected && typeof selected === 'string') {
+                           if (selected.startsWith('content://')) {
+                             toast.error("Picker returned content:// URI. Using raw path instead.");
+                             // Try to extract raw path if possible, or just append generic
+                             setCustomFolders(prev => [...prev, "/storage/emulated/0/DCIM"]);
+                           } else if (!customFolders.includes(selected)) {
+                             setCustomFolders(prev => [...prev, selected]);
+                           }
                         }
                       } catch (err) {
-                        toast.error("Failed to open folder picker");
+                        toast.error("Picker failed. Please type the path manually.");
                       }
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 bg-telegram-primary/20 text-telegram-primary border border-telegram-primary/30 rounded-lg px-3 py-2.5 text-xs font-semibold active:scale-95 transition-all"
+                    className="w-full flex items-center justify-center gap-2 bg-telegram-primary/20 text-telegram-primary border border-telegram-primary/30 rounded-lg px-3 py-2.5 text-xs font-semibold active:scale-95 transition-all"
                   >
                     <FolderSearch className="w-4 h-4" />
-                    Browse Phone Folders
+                    Browse System Folders
                   </button>
+                </div>
                 </div>
                 <ul className="space-y-1.5">
                   {customFolders.length === 0 && (

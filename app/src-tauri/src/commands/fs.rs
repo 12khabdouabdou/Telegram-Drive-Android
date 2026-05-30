@@ -413,16 +413,17 @@ pub async fn cmd_download_file(
 
     let mut actual_save_path = file_name.clone();
     if !actual_save_path.contains('/') && !actual_save_path.contains('\\') {
-        #[cfg(target_os = "android")]
-        {
-            actual_save_path = format!("/storage/emulated/0/Download/{}", file_name);
-        }
-        #[cfg(not(target_os = "android"))]
-        {
-            use tauri::Manager;
-            if let Ok(download_dir) = app_handle.path().download_dir() {
-                actual_save_path = download_dir.join(&file_name).to_string_lossy().to_string();
-            } else {
+        use tauri::Manager;
+        if let Ok(download_dir) = app_handle.path().download_dir() {
+            let _ = std::fs::create_dir_all(&download_dir);
+            actual_save_path = download_dir.join(&file_name).to_string_lossy().to_string();
+        } else {
+            #[cfg(target_os = "android")]
+            {
+                actual_save_path = format!("/storage/emulated/0/Download/{}", file_name);
+            }
+            #[cfg(not(target_os = "android"))]
+            {
                 actual_save_path = format!("./{}", file_name);
             }
         }
@@ -541,9 +542,12 @@ pub async fn cmd_download_file(
 
     #[cfg(target_os = "android")]
     {
-        let _ = std::process::Command::new("am")
-            .args(["broadcast", "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE", "-d", &format!("file://{}", actual_save_path)])
-            .status();
+        let path_clone = actual_save_path.clone();
+        tokio::task::spawn_blocking(move || {
+            let _ = std::process::Command::new("am")
+                .args(["broadcast", "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE", "-d", &format!("file://{}", path_clone)])
+                .status();
+        });
     }
 
     Ok("Download successful".to_string())
