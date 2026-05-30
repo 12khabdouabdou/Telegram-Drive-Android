@@ -7,11 +7,12 @@ import { TelegramFolder } from '../../types';
 
 interface MoveToFolderModalProps {
   selectedFileIds: number[];
+  sourceFolderId?: number | null;
   onClose: () => void;
   onMoved: () => void;
 }
 
-export function MoveToFolderModal({ selectedFileIds, onClose, onMoved }: MoveToFolderModalProps) {
+export function MoveToFolderModal({ selectedFileIds, sourceFolderId = null, onClose, onMoved }: MoveToFolderModalProps) {
   const [folders, setFolders] = useState<TelegramFolder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,8 @@ export function MoveToFolderModal({ selectedFileIds, onClose, onMoved }: MoveToF
     setMoving(true);
     try {
       await invoke('cmd_move_files', {
-        fileIds: selectedFileIds,
+        messageIds: selectedFileIds,
+        sourceFolderId: sourceFolderId,
         targetFolderId: selectedFolderId
       });
       toast.success(`Moved ${selectedFileIds.length} file(s) successfully`);

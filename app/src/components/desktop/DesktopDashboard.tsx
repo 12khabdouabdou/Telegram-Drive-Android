@@ -86,14 +86,16 @@ export function Dashboard({ onLogout }: { onLogout: () => void }) {
     });
 
 
+const { downloadQueue, queueDownload, clearFinished: clearDownloads, cancelAll: cancelDownloads, cancelItem: cancelDownloadItem, retryItem: retryDownloadItem } = useFileDownload(store);
+
 const {
     handleDelete, handleBulkDelete, handleBulkDownload,
     handleBulkMove, handleDownloadFolder, handleGlobalSearch
 
-} = useFileOperations(displayedFiles, selectedIds, setSelectedIds);
+} = useFileOperations(displayedFiles, selectedIds, setSelectedIds, activeFolderId, queueDownload);
 
     const { uploadQueue, setUploadQueue, handleManualUpload, handleFolderUpload, cancelAll: cancelUploads, cancelItem: cancelUploadItem, retryItem: retryUploadItem, isDragging } = useFileUpload(store);
-    const { downloadQueue, queueDownload, clearFinished: clearDownloads, cancelAll: cancelDownloads, cancelItem: cancelDownloadItem, retryItem: retryDownloadItem } = useFileDownload(store);
+
 
 
     const handleSelectAll = useCallback(() => {

@@ -1136,6 +1136,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
         {showMoveToFolder && (
           <MoveToFolderModal
             selectedFileIds={selectedIds}
+            sourceFolderId={activeFolderId}
             onClose={() => setShowMoveToFolder(false)}
             onMoved={() => {
               setShowMoveToFolder(false);

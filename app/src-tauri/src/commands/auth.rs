@@ -25,10 +25,9 @@ pub async fn ensure_client_initialized(
     state: &State<'_, TelegramState>,
     api_id: i32,
 ) -> Result<Client, String> {
-    let mut client_guard = state.client.lock().await;
-
-    if let Some(client) = client_guard.as_ref() {
-        return Ok(client.clone());
+    let client_opt = state.client.lock().await.clone();
+    if let Some(client) = client_opt {
+        return Ok(client);
     }
 
     // CRITICAL: Shutdown existing runner before creating a new one
@@ -152,7 +151,7 @@ pub async fn ensure_client_initialized(
         }
     });
     
-    *client_guard = Some(client.clone());
+    *state.client.lock().await = Some(client.clone());
     Ok(client)
 }
 

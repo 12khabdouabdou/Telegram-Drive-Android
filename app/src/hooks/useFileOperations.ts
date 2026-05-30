@@ -7,6 +7,8 @@ export function useFileOperations(
   files: TelegramFile[],
   selectedIds: number[],
   setSelectedIds: (ids: number[]) => void,
+  activeFolderId: number | null = null,
+  queueDownload?: (fileId: number, fileName: string, folderId: number | null) => void
 ) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -16,7 +18,7 @@ export function useFileOperations(
   const handleDelete = useCallback(async (fileId: number) => {
     setIsDeleting(true);
     try {
-      await invoke('cmd_delete_file', { messageId: fileId });
+      await invoke('cmd_delete_file', { messageId: fileId, folderId: activeFolderId });
       toast.success('File deleted');
       setSelectedIds([]);
     } catch (err) {
@@ -33,7 +35,7 @@ export function useFileOperations(
     setIsDeleting(true);
     try {
       for (const id of selectedIds) {
-        await invoke('cmd_delete_file', { messageId: id });
+        await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId });
       }
       toast.success(`Deleted ${selectedIds.length} files`);
       setSelectedIds([]);
@@ -46,11 +48,16 @@ export function useFileOperations(
 
   // Download single file
   const handleDownload = useCallback(async (fileId: number, fileName: string) => {
+    if (queueDownload) {
+      queueDownload(fileId, fileName, activeFolderId);
+      return;
+    }
     setIsDownloading(true);
     try {
       await invoke('cmd_download_file', { 
         fileId,
-        fileName 
+        fileName,
+        folderId: activeFolderId
       });
       toast.success('Download started');
     } catch (err) {
@@ -58,7 +65,7 @@ export function useFileOperations(
     } finally {
       setIsDownloading(false);
     }
-  }, []);
+  }, [queueDownload, activeFolderId]);
 
   // Bulk download
   const handleBulkDownload = useCallback(async () => {
@@ -68,10 +75,15 @@ export function useFileOperations(
     try {
       const filesToDownload = files.filter(f => selectedIds.includes(f.id));
       for (const file of filesToDownload) {
-        await invoke('cmd_download_file', { 
-          fileId: file.id,
-          fileName: file.name 
-        });
+        if (queueDownload) {
+          queueDownload(file.id, file.name, activeFolderId);
+        } else {
+          await invoke('cmd_download_file', { 
+            fileId: file.id,
+            fileName: file.name,
+            folderId: activeFolderId
+          });
+        }
       }
       toast.success(`Started ${filesToDownload.length} downloads`);
       setSelectedIds([]);
@@ -80,7 +92,7 @@ export function useFileOperations(
     } finally {
       setIsDownloading(false);
     }
-  }, [selectedIds, files, setSelectedIds]);
+  }, [selectedIds, files, setSelectedIds, queueDownload, activeFolderId]);
 
   // Move files to folder
   const handleBulkMove = useCallback(async (targetFolderId: number | null) => {
@@ -89,7 +101,8 @@ export function useFileOperations(
     setIsMoving(true);
     try {
       await invoke('cmd_move_files', {
-        fileIds: selectedIds,
+        messageIds: selectedIds,
+        sourceFolderId: activeFolderId,
         targetFolderId
       });
       toast.success(`Moved ${selectedIds.length} files`);
@@ -99,24 +112,29 @@ export function useFileOperations(
     } finally {
       setIsMoving(false);
     }
-  }, [selectedIds, setSelectedIds]);
+  }, [selectedIds, setSelectedIds, activeFolderId]);
 
   // Download folder (zip)
   const handleDownloadFolder = useCallback(async (folderId: number, folderName: string) => {
     setIsDownloading(true);
     try {
       await invoke('cmd_zip_folder', { folderId });
-      await invoke('cmd_download_file', {
-        fileId: folderId,
-        fileName: `${folderName}.zip`
-      });
+      if (queueDownload) {
+        queueDownload(folderId, `${folderName}.zip`, activeFolderId);
+      } else {
+        await invoke('cmd_download_file', {
+          fileId: folderId,
+          fileName: `${folderName}.zip`,
+          folderId: activeFolderId
+        });
+      }
       toast.success('Folder download started');
     } catch (err) {
       toast.error(`Folder download failed: ${err}`);
     } finally {
       setIsDownloading(false);
     }
-  }, []);
+  }, [queueDownload, activeFolderId]);
 
   // Global search
   const handleGlobalSearch = useCallback(async (query: string): Promise<TelegramFile[]> => {
