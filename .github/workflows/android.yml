@@ -112,7 +112,8 @@ jobs:
             if ! grep -q "android.permission.READ_EXTERNAL_STORAGE" "$MANIFEST"; then
               sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' "$MANIFEST"
             fi
-            # Add cleartext traffic for local video/image streaming
+            # Safely add cleartext traffic for local video/image streaming without creating duplicate attributes
+            sed -i 's/android:usesCleartextTraffic="[^"]*"//g' "$MANIFEST"
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST"
           else
             echo "Manifest not found at $MANIFEST (may be generated later during build)"
