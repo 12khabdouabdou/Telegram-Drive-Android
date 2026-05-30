@@ -1,4 +1,5 @@
 use tauri::{AppHandle, State, Manager, Emitter};
+use tauri_plugin_notification::NotificationExt;
 use std::sync::{Arc, Mutex, OnceLock};
 use walkdir::WalkDir;
 use serde::{Deserialize, Serialize};
@@ -80,6 +81,13 @@ pub async fn cmd_start_backup(
 
         let total = files_to_upload.len();
         let mut done = 0;
+        let mut last_notified_percent = 0;
+
+        let _ = app_handle.notification()
+            .builder()
+            .title("Backup Started")
+            .body(format!("Uploading {} files to Telegram Drive", total))
+            .show();
 
         let _ = app_handle.emit("backup-progress", BackupProgress {
             total,
@@ -95,6 +103,16 @@ pub async fn cmd_start_backup(
                 current_file: path.clone(),
                 is_running: true,
             });
+
+            let percent = if total > 0 { (done * 100) / total } else { 100 };
+            if percent >= last_notified_percent + 10 {
+                last_notified_percent = percent;
+                let _ = app_handle.notification()
+                    .builder()
+                    .title("Backup in Progress")
+                    .body(format!("Uploaded {}/{} ({}%)", done, total, percent))
+                    .show();
+            }
 
             let client_opt = { state.client.lock().await.clone() };
             if let Some(client) = client_opt {
@@ -125,6 +143,12 @@ pub async fn cmd_start_backup(
             }
             done += 1;
         }
+
+        let _ = app_handle.notification()
+            .builder()
+            .title("Backup Complete")
+            .body(format!("Successfully backed up {} files", done))
+            .show();
 
         let _ = app_handle.emit("backup-progress", BackupProgress {
             total,

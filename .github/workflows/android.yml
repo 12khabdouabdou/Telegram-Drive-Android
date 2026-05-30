@@ -112,6 +112,9 @@ jobs:
             if ! grep -q "android.permission.READ_EXTERNAL_STORAGE" "$MANIFEST"; then
               sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' "$MANIFEST"
             fi
+            if ! grep -q "android.permission.POST_NOTIFICATIONS" "$MANIFEST"; then
+              sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' "$MANIFEST"
+            fi
             # Safely add cleartext traffic for local video/image streaming without creating duplicate attributes
             sed -i 's/android:usesCleartextTraffic="[^"]*"//g' "$MANIFEST"
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST"

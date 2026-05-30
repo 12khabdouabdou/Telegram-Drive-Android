@@ -48,6 +48,7 @@ sha2 = "0.10"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 walkdir = "2"
 sqlite = "0.37.0"
+tauri-plugin-notification = "2"
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21"
