@@ -653,7 +653,7 @@ pub async fn cmd_search_global(
 
     let messages = match result {
         tl::enums::messages::Messages::Messages(m) => m.messages,
-        tl::enums::messages::Messages::MessagesSlice(m) => m.messages,
+        tl::enums::messages::Messages::Slice(m) => m.messages,
         tl::enums::messages::Messages::ChannelMessages(m) => m.messages,
         tl::enums::messages::Messages::NotModified(_) => Vec::new(),
     };
