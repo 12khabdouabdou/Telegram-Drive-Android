@@ -103,11 +103,17 @@ jobs:
           MANIFEST=app/src-tauri/gen/android/app/src/main/AndroidManifest.xml
           if [ -f "$MANIFEST" ]; then
             echo "Checking permissions in: $MANIFEST"
-            grep -E "uses-permission|INTERNET|ACCESS_NETWORK" "$MANIFEST" || echo "WARNING: INTERNET permission not found!"
             if ! grep -q "android.permission.INTERNET" "$MANIFEST"; then
-              echo "Adding INTERNET permission..."
               sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
             fi
+            if ! grep -q "android.permission.WRITE_EXTERNAL_STORAGE" "$MANIFEST"; then
+              sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' "$MANIFEST"
+            fi
+            if ! grep -q "android.permission.READ_EXTERNAL_STORAGE" "$MANIFEST"; then
+              sed -i '/<\/manifest>/i <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' "$MANIFEST"
+            fi
+            # Add cleartext traffic for local video/image streaming
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/g' "$MANIFEST"
           else
             echo "Manifest not found at $MANIFEST (may be generated later during build)"
           fi

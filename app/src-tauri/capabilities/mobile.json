@@ -10,19 +10,19 @@
   "permissions": [
     {
       "identifier": "fs:allow-read",
-      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }]
+      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }, { "path": "$DOWNLOAD/**" }]
     },
     {
       "identifier": "fs:allow-write",
-      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }]
+      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }, { "path": "$DOWNLOAD/**" }]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }]
+      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }, { "path": "$DOWNLOAD/**" }]
     },
     {
       "identifier": "fs:allow-stat",
-      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }]
+      "allow": [{ "path": "$TEMP/**" }, { "path": "$CACHE/**" }, { "path": "$APPDATA/**" }, { "path": "$DOWNLOAD/**" }]
     },
     "store:default",
     "dialog:default",

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense, laz
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { cacheDir, join } from '@tauri-apps/api/path';
+import { downloadDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
@@ -301,7 +301,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     toast.success('Download started');
 
     try {
-      const dir = await cacheDir();
+      const dir = await downloadDir();
       const savePath = await join(dir, file.name);
       await invoke('cmd_download_file', {
         messageId: file.id,
@@ -338,7 +338,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (!activeFolderId) return;
     toast.info('Downloading all files in folder...');
     try {
-      const dir = await cacheDir();
+      const dir = await downloadDir();
       for (const file of displayedFiles) {
         const downloadId = `dl_${file.id}_${Date.now()}`;
         const newItem: DownloadItem = {
@@ -379,7 +379,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (selectedIds.length === 0) return;
     toast.info(`Starting download of ${selectedIds.length} files...`);
     try {
-      const dir = await cacheDir();
+      const dir = await downloadDir();
       for (const id of selectedIds) {
         const downloadId = `dl_${id}_${Date.now()}`;
         const filename = `file_${id}`; // We don't have the file name easily accessible here
@@ -530,9 +530,18 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
                 <h1 className="text-base font-bold tracking-tight bg-gradient-to-r from-white to-telegram-subtext bg-clip-text text-transparent">
                   Telegram Drive
                 </h1>
-                <p className="text-[10px] text-telegram-subtext/80 font-medium font-mono uppercase tracking-wider">
-                  {activeFolder?.name || 'Loading...'}
-                </p>
+                <select
+                  value={activeFolderId ?? ''}
+                  onChange={(e) => {
+                    setActiveFolderId(e.target.value ? Number(e.target.value) : null);
+                    setSearchTerm('');
+                  }}
+                  className="bg-transparent text-[10px] text-telegram-subtext/80 font-medium font-mono uppercase tracking-wider focus:outline-none appearance-none cursor-pointer block"
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                >
+                  <option value="">SAVED MESSAGES</option>
+                  {folders.map(f => <option key={f.id} value={f.id}>{f.name.toUpperCase()}</option>)}
+                </select>
               </div>
             </>
           )}
@@ -597,11 +606,25 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
               <div className="flex flex-col gap-3 bg-telegram-hover/20 p-3 rounded-2xl border border-telegram-border/30">
                 {/* Row 1: Folder Name & Global Actions */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <Folder className="w-5 h-5 text-telegram-primary shrink-0" />
-                    <span className="text-sm font-semibold truncate">{activeFolder?.name || 'Saved Messages'}</span>
+                    <div className="relative flex-1 min-w-0 flex items-center">
+                      <select
+                        value={activeFolderId ?? ''}
+                        onChange={(e) => {
+                          setActiveFolderId(e.target.value ? Number(e.target.value) : null);
+                          setSearchTerm('');
+                        }}
+                        className="w-full bg-transparent text-sm font-semibold truncate focus:outline-none appearance-none cursor-pointer pr-4"
+                        style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                      >
+                        <option value="">Saved Messages</option>
+                        {folders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                      </select>
+                      <span className="absolute right-0 pointer-events-none text-xs text-telegram-subtext">▼</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     <button
                       onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-telegram-primary/15 text-telegram-primary border border-telegram-primary/10 active:scale-95 transition-all"
