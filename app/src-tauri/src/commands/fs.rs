@@ -432,15 +432,7 @@ pub async fn cmd_download_file(
     if client_opt.is_none() { 
         log::info!("[MOCK] Downloaded message {} from {:?} to {}", file_id, folder_id, actual_save_path);
         if let Err(e) = tokio::fs::write(&actual_save_path, b"Mock Content").await { return Err(e.to_string()); }
-        return #[cfg(target_os = "android")]
-    {
-        // Broadcast intent to trigger MediaScanner so it appears in Gallery/Files immediately
-        let _ = std::process::Command::new("am")
-            .args(["broadcast", "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE", "-d", &format!("file://{}", actual_save_path)])
-            .status();
-    }
-
-    Ok("Download successful".to_string());
+        return Ok("Download successful".to_string());
     }
     let client = client_opt.unwrap();
     
@@ -545,6 +537,13 @@ pub async fn cmd_download_file(
         let _ = app_handle.emit("download-progress", ProgressPayload {
             id: tid, percent: 100, uploaded_bytes: downloaded, total_bytes: total_size, speed_bytes_per_sec: 0,
         });
+    }
+
+    #[cfg(target_os = "android")]
+    {
+        let _ = std::process::Command::new("am")
+            .args(["broadcast", "-a", "android.intent.action.MEDIA_SCANNER_SCAN_FILE", "-d", &format!("file://{}", actual_save_path)])
+            .status();
     }
 
     Ok("Download successful".to_string())
