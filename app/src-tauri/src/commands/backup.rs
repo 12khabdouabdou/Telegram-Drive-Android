@@ -8,6 +8,7 @@ use crate::commands::utils::resolve_peer;
 use grammers_client::InputMessage;
 
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BackupConfig {
     pub folders: Vec<String>,
     pub dest_folder_id: Option<i64>,
@@ -63,6 +64,9 @@ pub async fn cmd_start_backup(
 
         // Gather all files
         let mut files_to_upload = Vec::new();
+        if let Some(parent) = history_file.parent() {
+            let _ = tokio::fs::create_dir_all(parent).await;
+        }
         for folder in &config.folders {
             for entry in WalkDir::new(folder).into_iter().filter_map(|e| e.ok()) {
                 if entry.file_type().is_file() {

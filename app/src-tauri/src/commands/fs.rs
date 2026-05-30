@@ -400,10 +400,10 @@ pub async fn cmd_delete_file(
 
 #[tauri::command]
 pub async fn cmd_download_file(
-    message_id: i32,
-    save_path: String,
-    folder_id: Option<i64>,
-    transfer_id: Option<String>,
+    #[serde(rename = "fileId")] message_id: i32,
+    #[serde(rename = "fileName")] save_path: String,
+    #[serde(rename = "folderId")] folder_id: Option<i64>,
+    #[serde(rename = "transferId")] transfer_id: Option<String>,
     app_handle: tauri::AppHandle,
     state: State<'_, TelegramState>,
     bw_state: State<'_, BandwidthManager>,
@@ -411,10 +411,27 @@ pub async fn cmd_download_file(
 ) -> Result<String, String> {
     let tid = transfer_id.unwrap_or_default();
 
+    let mut actual_save_path = save_path.clone();
+    if !actual_save_path.contains('/') && !actual_save_path.contains('\\') {
+        #[cfg(target_os = "android")]
+        {
+            actual_save_path = format!("/storage/emulated/0/Download/{}", save_path);
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            use tauri::Manager;
+            if let Ok(download_dir) = app_handle.path().download_dir() {
+                actual_save_path = download_dir.join(&save_path).to_string_lossy().to_string();
+            } else {
+                actual_save_path = format!("./{}", save_path);
+            }
+        }
+    }
+
     let client_opt = { state.client.lock().await.clone() };
     if client_opt.is_none() { 
-        log::info!("[MOCK] Downloaded message {} from {:?} to {}", message_id, folder_id, save_path);
-        if let Err(e) = tokio::fs::write(&save_path, b"Mock Content").await { return Err(e.to_string()); }
+        log::info!("[MOCK] Downloaded message {} from {:?} to {}", message_id, folder_id, actual_save_path);
+        if let Err(e) = tokio::fs::write(&actual_save_path, b"Mock Content").await { return Err(e.to_string()); }
         return Ok("Download successful".to_string());
     }
     let client = client_opt.unwrap();
@@ -449,7 +466,7 @@ pub async fn cmd_download_file(
 
     // Stream download with per-chunk progress
     let mut download_iter = client.iter_download(&media);
-    let mut file = tokio::fs::File::create(&save_path).await.map_err(|e| e.to_string())?;
+    let mut file = tokio::fs::File::create(&actual_save_path).await.map_err(|e| e.to_string())?;
     let mut downloaded: u64 = 0;
     let mut last_emit_time = std::time::Instant::now();
     let mut last_emit_bytes: u64 = 0;
@@ -460,7 +477,7 @@ pub async fn cmd_download_file(
         if state.cancelled_transfers.read().await.contains(&tid) {
             state.cancelled_transfers.write().await.remove(&tid);
             drop(file);
-            cleanup_partial_file(&save_path);
+            cleanup_partial_file(&actual_save_path);
             return Err("Transfer cancelled".to_string());
         }
 
