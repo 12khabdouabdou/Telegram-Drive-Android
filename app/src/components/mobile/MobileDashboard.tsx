@@ -445,7 +445,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     setSearchTerm('');
   }, [activeFolderId]);
 
-  const activeFolder = folders.find(f => f.id === activeFolderId);
 
   const toggleSort = useCallback((field: 'name' | 'size' | 'date') => {
     if (sortBy === field) {
