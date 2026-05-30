@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CloudDownload, Trash2, File, Image, Music, Video, FileText, Folder, Share2, Eye } from 'lucide-react';
 import { TelegramFile } from '../../types';
 import { invoke } from '@tauri-apps/api/core';

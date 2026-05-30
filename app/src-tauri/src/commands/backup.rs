@@ -1,4 +1,4 @@
-use tauri::{AppHandle, State, Manager};
+use tauri::{AppHandle, State, Manager, Emitter};
 use std::sync::{Arc, Mutex, OnceLock};
 use walkdir::WalkDir;
 use serde::{Deserialize, Serialize};
@@ -138,5 +138,6 @@ pub async fn cmd_start_backup(
 #[tauri::command]
 pub fn cmd_get_backup_status() -> bool {
     let running_flag = get_running_flag();
-    *running_flag.lock().unwrap()
+    let is_running = *running_flag.lock().unwrap();
+    is_running
 }
