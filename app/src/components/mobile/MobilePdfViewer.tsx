@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
+// @ts-ignore
+import * as pdfjsLib from 'pdfjs-dist/build/pdf.js';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.js?url';
 import { TelegramFile } from '../../types';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;

@@ -3,11 +3,12 @@ import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize } from 'lucide-
 import { invoke } from '@tauri-apps/api/core';
 // Use the legacy build — the modern build uses Map.getOrInsertComputed()
 // which isn't available in Tauri's WebKit WebView
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+// @ts-ignore
+import * as pdfjsLib from 'pdfjs-dist/build/pdf.js';
 import { TelegramFile } from '../../../types';
 
 // Use Vite's ?url suffix to get a properly bundled asset URL for the worker
-import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';
+import workerUrl from 'pdfjs-dist/build/pdf.worker.js?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 interface StreamInfo {
