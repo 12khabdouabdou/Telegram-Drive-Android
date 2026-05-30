@@ -20,9 +20,9 @@ export function MobileShareDashboard({ onClose }: MobileShareDashboardProps) {
       const list = await invoke<ShareInfo[]>('cmd_list_shares');
       setShares(list.map(s => ({
         ...s,
-        folder_id: null,
-        message_id: s.id ? parseInt(s.id, 10) : 0,
-        revoked: false,
+        folder_id: s.folder_id ?? null,
+        message_id: s.message_id ?? 0,
+        revoked: s.revoked ?? false,
         created_at: s.created_at,
         file_name: s.file_name,
         file_size: s.file_size,

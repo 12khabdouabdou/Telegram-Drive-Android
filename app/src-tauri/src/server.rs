@@ -261,6 +261,7 @@ pub async fn start_server(
             .allowed_origin("tauri://localhost")
             .allowed_origin("http://localhost:1420")
             .allowed_origin("https://tauri.localhost")
+            .allowed_origin("http://tauri.localhost")
             .allow_any_method()
             .allow_any_header();
 

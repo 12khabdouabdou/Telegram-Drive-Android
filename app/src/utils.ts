@@ -16,7 +16,7 @@ const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'he
 
 const endsWithAny = (name: string, exts: readonly string[]) => {
     const lower = name.toLowerCase();
-    return exts.some(ext => lower.endsWith(ext));
+    return exts.some(ext => lower.endsWith('.' + ext));
 };
 
 export const isMediaFile   = (name: string) => endsWithAny(name, MEDIA_EXTENSIONS);

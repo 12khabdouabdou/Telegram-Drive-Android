@@ -1,6 +1,7 @@
 use tauri::{AppHandle, State, Manager, Emitter};
 use tauri_plugin_notification::NotificationExt;
 use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, Ordering};
 use walkdir::WalkDir;
 use serde::{Deserialize, Serialize};
 
@@ -24,9 +25,15 @@ pub struct BackupProgress {
 }
 
 static BACKUP_RUNNING: OnceLock<Arc<Mutex<bool>>> = OnceLock::new();
+/// Set to true to request the running backup to stop.
+static BACKUP_STOP: OnceLock<Arc<AtomicBool>> = OnceLock::new();
 
 fn get_running_flag() -> Arc<Mutex<bool>> {
     BACKUP_RUNNING.get_or_init(|| Arc::new(Mutex::new(false))).clone()
+}
+
+fn get_stop_flag() -> Arc<AtomicBool> {
+    BACKUP_STOP.get_or_init(|| Arc::new(AtomicBool::new(false))).clone()
 }
 
 #[tauri::command]
@@ -36,12 +43,15 @@ pub async fn cmd_start_backup(
     state: State<'_, TelegramState>,
 ) -> Result<String, String> {
     let running_flag = get_running_flag();
+    let stop_flag = get_stop_flag();
     {
         let mut running = running_flag.lock().unwrap();
         if *running {
             return Err("Backup is already running".to_string());
         }
         *running = true;
+        // Clear any previous stop request
+        stop_flag.store(false, Ordering::Relaxed);
     }
 
     let state = state.inner().clone();
@@ -97,6 +107,12 @@ pub async fn cmd_start_backup(
         });
 
         for path in files_to_upload {
+            // Check stop signal before each file
+            if stop_flag.load(Ordering::Relaxed) {
+                log::info!("Backup stopped by user request after {} files", done);
+                break;
+            }
+
             let _ = app_handle.emit("backup-progress", BackupProgress {
                 total,
                 done,
@@ -158,6 +174,7 @@ pub async fn cmd_start_backup(
         });
 
         *running_flag.lock().unwrap() = false;
+        stop_flag.store(false, Ordering::Relaxed);
     });
 
     Ok("Backup started".to_string())
@@ -168,4 +185,11 @@ pub fn cmd_get_backup_status() -> bool {
     let running_flag = get_running_flag();
     let is_running = *running_flag.lock().unwrap();
     is_running
+}
+
+#[tauri::command]
+pub fn cmd_stop_backup() -> Result<(), String> {
+    let stop_flag = get_stop_flag();
+    stop_flag.store(true, Ordering::Relaxed);
+    Ok(())
 }

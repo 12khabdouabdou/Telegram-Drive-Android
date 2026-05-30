@@ -74,6 +74,8 @@ export function TouchFileList({
 
   const handleLongPress = (e: React.TouchEvent | React.MouseEvent, file: TelegramFile) => {
     e.preventDefault();
+    // Haptic feedback on long-press
+    if (navigator.vibrate) navigator.vibrate(30);
     onFileLongPress(file.id);
   };
 
@@ -205,6 +207,7 @@ clearTimeout(parseInt(timeoutId, 10));
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
                           onDelete(file.id, file.folder_id);
                         }}
                         className="p-1.5 rounded-lg bg-red-500/15 text-red-400 active:scale-90 transition-all"
@@ -287,6 +290,7 @@ clearTimeout(parseInt(timeoutId, 10));
                 )}
                 <button
                   onClick={() => {
+                    if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
                     onDelete(contextMenuFile.id, contextMenuFile.folder_id);
                     setContextMenuFile(null);
                   }}
@@ -405,6 +409,7 @@ clearTimeout(parseInt(timeoutId, 10));
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
                     onDelete(file.id, file.folder_id);
                   }}
                   className="p-2.5 rounded-xl bg-red-500/10 text-red-400 active:scale-90 transition-all"
@@ -475,6 +480,7 @@ clearTimeout(parseInt(timeoutId, 10));
               )}
               <button
                 onClick={() => {
+                  if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
                   onDelete(contextMenuFile.id, contextMenuFile.folder_id);
                   setContextMenuFile(null);
                 }}

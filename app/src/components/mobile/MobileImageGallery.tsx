@@ -152,7 +152,9 @@ export function MobileImageGallery({
     } else {
       invoke('cmd_download_file', { 
         fileId: currentFile.id, 
-        fileName: currentFile.name 
+        fileName: currentFile.name,
+        folderId: activeFolderId ?? null,
+        transferId: `dl_${currentFile.id}_${Date.now()}`,
       }).then(() => {
         toast.success('Download started');
       }).catch((err) => {

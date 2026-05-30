@@ -264,6 +264,7 @@ pub fn run() {
             commands::cmd_write_temp_file,
             commands::cmd_start_backup,
             commands::cmd_get_backup_status,
+            commands::cmd_stop_backup,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

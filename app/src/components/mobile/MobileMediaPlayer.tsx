@@ -38,12 +38,12 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, activeFolderId }: M
 
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(console.error);
       } else {
-        videoRef.current.play();
+        videoRef.current.pause();
       }
-      setIsPlaying(!isPlaying);
+      // isPlaying state is driven by onPlay/onPause native events — no manual flip needed
     }
   };
 
@@ -194,6 +194,10 @@ export function MediaPlayer({ file, onClose, onNext, onPrev, activeFolderId }: M
                 onLoadedMetadata={handleLoadedMetadata}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  if (onNext) onNext();
+                }}
               />
             )}
           </div>

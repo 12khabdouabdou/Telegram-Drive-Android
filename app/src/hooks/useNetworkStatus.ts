@@ -12,29 +12,28 @@ export function useNetworkStatus() {
     const [isOnline, setIsOnline] = useState(true);
 
     useEffect(() => {
-        // Import Tauri invoke
-        import('@tauri-apps/api/core').then(({ invoke }) => {
-            // Check network status
-            const checkNetwork = async () => {
-                try {
-                    // Use the lightweight TCP check (no grammers involved)
-                    const available = await invoke<boolean>('cmd_is_network_available');
-                    setIsOnline(available);
-                } catch (error) {
-                    // If the command fails, assume offline
-                    setIsOnline(false);
-                }
-            };
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-            // Initial check
-            checkNetwork();
+    const checkNetwork = async () => {
+        try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            const available = await invoke<boolean>('cmd_is_network_available');
+            setIsOnline(available);
+        } catch (error) {
+            setIsOnline(false);
+        }
+    };
 
-            // Poll every 10 seconds (very lightweight, ~2ms per check)
-            const interval = setInterval(checkNetwork, 10000);
+    // Initial check
+    checkNetwork();
 
-            return () => clearInterval(interval);
-        });
-    }, []);
+    // Poll every 10 seconds — set up outside .then() so React cleanup can cancel it
+    intervalId = setInterval(checkNetwork, 10000);
+
+    return () => {
+        if (intervalId !== null) clearInterval(intervalId);
+    };
+}, []);
 
     return isOnline;
 }

@@ -31,7 +31,7 @@ export function useFileDownload(store: any) {
     setDownloadQueue(prev => [...prev, newItem]);
 
     try {
-      await invoke('cmd_download_file', { fileId, fileName: filename });
+      await invoke('cmd_download_file', { fileId, fileName: filename, folderId, transferId: downloadId });
       
       setDownloadQueue(prev => prev.map(item => 
         item.id === downloadId 
@@ -92,7 +92,9 @@ export function useFileDownload(store: any) {
     try {
       await invoke('cmd_download_file', { 
         fileId: item.messageId, 
-        fileName: item.filename 
+        fileName: item.filename,
+        folderId: item.folderId ?? null,
+        transferId: item.id,
       });
       
       setDownloadQueue(prev => prev.map(i => 

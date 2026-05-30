@@ -2,6 +2,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::time::{Instant, Duration};
 use chrono::Local;
 use tauri::Manager;
 
@@ -26,6 +27,8 @@ pub struct BandwidthManager {
     pub file_path: PathBuf,
     pub stats: Mutex<BandwidthStats>,
     pub limit: u64, // Daily limit in bytes
+    /// Tracks the last time we wrote to disk — avoids thundering I/O during streaming
+    pub last_save: Mutex<Instant>,
 }
 
 impl BandwidthManager {
@@ -49,6 +52,7 @@ impl BandwidthManager {
             file_path,
             stats: Mutex::new(stats),
             limit: 250 * 1024 * 1024 * 1024, // 250 GB
+            last_save: Mutex::new(Instant::now() - Duration::from_secs(2)), // allow first write immediately
         }
     }
 
@@ -79,14 +83,22 @@ impl BandwidthManager {
         self.check_and_reset();
         let mut stats = self.stats.lock().unwrap();
         stats.up_bytes += bytes;
-        self.save_locked(&stats);
+        self.save_throttled(&stats);
     }
     
     pub fn add_down(&self, bytes: u64) {
         self.check_and_reset();
         let mut stats = self.stats.lock().unwrap();
         stats.down_bytes += bytes;
-        self.save_locked(&stats);
+        self.save_throttled(&stats);
+    }
+
+    fn save_throttled(&self, stats: &BandwidthStats) {
+        let mut last = self.last_save.lock().unwrap();
+        if last.elapsed() >= Duration::from_secs(1) {
+            self.save_locked(stats);
+            *last = Instant::now();
+        }
     }
 
     fn save_locked(&self, stats: &BandwidthStats) {

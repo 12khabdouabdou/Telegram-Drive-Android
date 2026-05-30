@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { X, CloudUpload, Play, Folder, Phone, Plus, Trash2 } from 'lucide-react';
+import { X, CloudUpload, Play, Square, Folder, Phone, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MobileAutoBackupProps {
@@ -62,6 +62,15 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
       toast.success("Backup started in background");
     } catch (err) {
       toast.error(`Failed to start backup: ${err}`);
+    }
+  };
+
+  const handleStopBackup = async () => {
+    try {
+      await invoke('cmd_stop_backup');
+      toast.info("Stopping backup after current file...");
+    } catch (err) {
+      toast.error(`Failed to stop backup: ${err}`);
     }
   };
 
@@ -183,15 +192,25 @@ export function MobileAutoBackup({ onClose, folders }: MobileAutoBackupProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-telegram-border/50 bg-telegram-surface">
+        <div className="p-4 border-t border-telegram-border/50 bg-telegram-surface flex gap-3">
           <button
             onClick={handleStartBackup}
             disabled={isRunning}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-telegram-primary text-black font-bold active:scale-95 transition-all disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-telegram-primary text-black font-bold active:scale-95 transition-all disabled:opacity-50"
           >
             <Play className="w-5 h-5" />
             {isRunning ? 'Backup in Progress...' : 'Start Backup Now'}
           </button>
+          {isRunning && (
+            <button
+              onClick={handleStopBackup}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/15 text-red-400 border border-red-500/30 font-bold active:scale-95 transition-all"
+              title="Stop backup after current file"
+            >
+              <Square className="w-5 h-5" />
+              Stop
+            </button>
+          )}
         </div>
       </div>
     </div>

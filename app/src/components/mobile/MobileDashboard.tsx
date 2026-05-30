@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo, Suspense, laz
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { downloadDir, join } from '@tauri-apps/api/path';
 import { toast } from 'sonner';
 import { Folder, Download, Settings, Search, Grid, List, Upload, FolderPlus, RefreshCw, CloudDownload, Trash2 } from 'lucide-react';
 import { BottomNavBar } from './BottomNavBar';
@@ -48,6 +47,13 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const [showAutoBackup, setShowAutoBackup] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Pull-to-refresh state
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const pullStartY = useRef<number>(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const PULL_THRESHOLD = 60;
   
   const { isAndroid } = usePlatform();
   const storeRef = { current: null } as any;
@@ -205,9 +211,9 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
   const handleBulkDelete = useCallback(async () => {
     if (selectedIds.length === 0) return;
     try {
-      for (const id of selectedIds) {
-        await invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId ?? null });
-      }
+      await Promise.all(
+        selectedIds.map(id => invoke('cmd_delete_file', { messageId: id, folderId: activeFolderId ?? null }))
+      );
       toast.success(`Deleted ${selectedIds.length} files`);
       queryClient.invalidateQueries({ queryKey: ['files'] });
       setSelectedIds([]);
@@ -301,11 +307,9 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     toast.success('Download started');
 
     try {
-      const dir = await downloadDir();
-      const savePath = await join(dir, file.name);
       await invoke('cmd_download_file', {
-        messageId: file.id,
-        savePath,
+        fileId: file.id,
+        fileName: file.name,
         folderId: file.folder_id ?? null,
         transferId: downloadId
       });
@@ -338,7 +342,6 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (!activeFolderId) return;
     toast.info('Downloading all files in folder...');
     try {
-      const dir = await downloadDir();
       for (const file of displayedFiles) {
         const downloadId = `dl_${file.id}_${Date.now()}`;
         const newItem: DownloadItem = {
@@ -351,11 +354,10 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
         };
         setDownloadQueue(prev => [...prev, newItem]);
 
-        const savePath = await join(dir, file.name);
         try {
           await invoke('cmd_download_file', {
-            messageId: file.id,
-            savePath,
+            fileId: file.id,
+            fileName: file.name,
             folderId: file.folder_id ?? null,
             transferId: downloadId
           });
@@ -379,26 +381,26 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     if (selectedIds.length === 0) return;
     toast.info(`Starting download of ${selectedIds.length} files...`);
     try {
-      const dir = await downloadDir();
       for (const id of selectedIds) {
         const downloadId = `dl_${id}_${Date.now()}`;
-        const filename = `file_${id}`; // We don't have the file name easily accessible here
+        const file = sortedFiles.find(f => f.id === id);
+        const filename = file?.name ?? `file_${id}`;
+        const fileFolderId = file?.folder_id ?? activeFolderId ?? null;
         const newItem: DownloadItem = {
           id: downloadId,
           messageId: id,
-          filename: filename,
-          folderId: activeFolderId ?? null,
+          filename,
+          folderId: fileFolderId,
           status: 'downloading',
           progress: 0
         };
         setDownloadQueue(prev => [...prev, newItem]);
 
-        const savePath = await join(dir, filename);
         try {
           await invoke('cmd_download_file', {
-            messageId: id,
-            savePath,
-            folderId: activeFolderId ?? null,
+            fileId: id,
+            fileName: filename,
+            folderId: fileFolderId,
             transferId: downloadId
           });
           setDownloadQueue(prev => prev.map(item => 
@@ -414,7 +416,7 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     } catch (err) {
       toast.error(`Bulk download failed: ${err}`);
     }
-  }, [selectedIds, activeFolderId]);
+  }, [selectedIds, activeFolderId, sortedFiles]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -445,6 +447,89 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
     setSearchTerm('');
   }, [activeFolderId]);
 
+  // Android back button — unwind state instead of exiting the app
+  useEffect(() => {
+    const hasState =
+      selectedIds.length > 0 ||
+      showCreateFolder ||
+      showMoveToFolder ||
+      !!shareFile ||
+      !!previewGallery ||
+      showNetworkSettings ||
+      showShareDashboard ||
+      showAutoBackup ||
+      activeFolderId !== null;
+
+    if (hasState) {
+      window.history.pushState({ telegramDrive: true }, '');
+    }
+
+    const handlePop = () => {
+      if (selectedIds.length > 0) {
+        setSelectedIds([]);
+      } else if (showCreateFolder) {
+        setShowCreateFolder(false);
+      } else if (showMoveToFolder) {
+        setShowMoveToFolder(false);
+      } else if (shareFile) {
+        setShareFile(null);
+      } else if (previewGallery) {
+        setPreviewGallery(null);
+      } else if (showNetworkSettings) {
+        setShowNetworkSettings(false);
+      } else if (showShareDashboard) {
+        setShowShareDashboard(false);
+      } else if (showAutoBackup) {
+        setShowAutoBackup(false);
+      } else if (activeFolderId !== null) {
+        setActiveFolderId(null);
+      }
+      // Push again so next back press also gets intercepted
+      window.history.pushState({ telegramDrive: true }, '');
+    };
+
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [
+    selectedIds,
+    showCreateFolder,
+    showMoveToFolder,
+    shareFile,
+    previewGallery,
+    showNetworkSettings,
+    showShareDashboard,
+    showAutoBackup,
+    activeFolderId,
+  ]);
+
+
+  // Pull-to-refresh touch handlers
+  const handlePullTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = scrollContainerRef.current;
+    if (el && el.scrollTop === 0) {
+      pullStartY.current = e.touches[0].clientY;
+    } else {
+      pullStartY.current = 0;
+    }
+  }, []);
+
+  const handlePullTouchMove = useCallback((e: React.TouchEvent) => {
+    if (pullStartY.current === 0) return;
+    const dist = e.touches[0].clientY - pullStartY.current;
+    if (dist > 0) {
+      setPullDistance(Math.min(dist, PULL_THRESHOLD * 1.5));
+      setIsPulling(dist >= PULL_THRESHOLD);
+    }
+  }, [PULL_THRESHOLD]);
+
+  const handlePullTouchEnd = useCallback(async () => {
+    if (isPulling) {
+      await refetch();
+    }
+    setPullDistance(0);
+    setIsPulling(false);
+    pullStartY.current = 0;
+  }, [isPulling, refetch]);
 
   const toggleSort = useCallback((field: 'name' | 'size' | 'date') => {
     if (sortBy === field) {
@@ -597,7 +682,25 @@ export default function MobileDashboard({ onLogout }: { onLogout?: () => void })
       )}
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[130px]' : 'pb-[100px]'}`}>
+      <main
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-y-auto px-4 py-3 space-y-4 scroll-smooth ${isAndroid ? 'pb-[130px]' : 'pb-[100px]'}`}
+        onTouchStart={handlePullTouchStart}
+        onTouchMove={handlePullTouchMove}
+        onTouchEnd={handlePullTouchEnd}
+      >
+        {/* Pull-to-refresh indicator */}
+        {pullDistance > 0 && (
+          <div
+            className="flex items-center justify-center transition-all"
+            style={{ height: Math.min(pullDistance, PULL_THRESHOLD) }}
+          >
+            <RefreshCw
+              className={`w-5 h-5 text-telegram-primary transition-transform ${isPulling ? 'animate-spin' : ''}`}
+              style={{ transform: `rotate(${(pullDistance / PULL_THRESHOLD) * 360}deg)` }}
+            />
+          </div>
+        )}
         {activeTab === 'files' && (
           <div className="space-y-4 animate-fade-in">
             {/* Folder Header */}

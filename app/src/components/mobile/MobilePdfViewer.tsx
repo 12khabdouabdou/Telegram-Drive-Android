@@ -76,6 +76,15 @@ export function MobilePdfViewer({ file, onClose, onNext, onPrev, activeFolderId 
     };
   }, [streamInfo, activeFolderId, file.id]);
 
+  // Destroy the PDF document on unmount to free off-heap memory
+  useEffect(() => {
+    return () => {
+      if (pdf) {
+        pdf.destroy();
+      }
+    };
+  }, [pdf]);
+
   useEffect(() => {
     if (!pdf || !canvasRef.current) return;
 

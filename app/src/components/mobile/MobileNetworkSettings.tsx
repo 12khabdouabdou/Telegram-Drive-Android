@@ -296,7 +296,15 @@ export function MobileNetworkSettings({ onClose }: MobileNetworkSettingsProps) {
                 <input
                   type="number"
                   value={proxyPort}
-                  onChange={(e) => setProxyPort(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const num = Number(val);
+                    if (val === '' || (num >= 1 && num <= 65535)) {
+                      setProxyPort(val);
+                    }
+                  }}
+                  min="1"
+                  max="65535"
                   placeholder="1080"
                   className="w-full px-4 py-3 rounded-xl bg-telegram-hover/50 border border-telegram-border/50 text-sm focus:outline-none focus:border-telegram-primary/50"
                 />
